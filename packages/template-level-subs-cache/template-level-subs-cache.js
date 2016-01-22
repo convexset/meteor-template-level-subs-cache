@@ -18,37 +18,18 @@ TemplateLevelSubsCache = (function() {
 	PackageUtilities.addImmutablePropertyFunction(tlsc, "makeCache", function makeCache(options = {}) {
 		// See: https://atmospherejs.com/ccorcos/subs-cache
 		options = _.extend({
-			expireAfter: 2, // in minutes
+			expireAfter: 5, // in minutes
 			cacheLimit: -1 // number of subscriptions to cache; -1 for infinite
 		}, options);
 
 		var subsCache = new SubsCache(options);
 
-		PackageUtilities.addImmutablePropertyFunction(subsCache, "cachedSubscription", function cachedSubscription(tmpls, subId, subscriptionArgs, options = {}) {
-			/*
-				Usage:
-				subsCache.cachedSubscription(Template.TemplateName,
-				                             'subscriptionIdHere',
-				                             ['subscription-name', 'arg1', 'arg2', ...],
-				                             {
-												beforeStart: function(templateInstance, subscriptionId) { ... },
-												afterStart: function(templateInstance, subscriptionId) { ... },
-												onReady: function(templateInstance, subscriptionId) { ... },
-												beforeStop: function(templateInstance, subscriptionId) { ... },
-												afterStop: function(templateInstance, subscriptionId) { ... },
-				                             });
-					or
-				subsCache.cachedSubscription(Template.TemplateName,
-				                             'subscriptionIdHere',
-				                             ['subscription-name', 'arg1', () => arg2(), ...],
-				                             options);
-					or
-				subsCache.cachedSubscription([Template.TemplateName1, Template.TemplateName2, ...],
-				                             'subscriptionIdHere',
-				                             ['subscription-name', 'arg1', () => arg2(), ...],
-				                             options);
-			*/
+		var _tlscI = function TemplateLevelSubsCache_Instance() {};
+		var tlscInstance = new _tlscI();
 
+		PackageUtilities.addImmutablePropertyObject(tlscInstance, "options", options);
+
+		PackageUtilities.addImmutablePropertyFunction(tlscInstance, "prepareCachedSubscription", function cachedSubscription(tmpls, subId, subscriptionArgs, options = {}) {
 			var templates;
 			if (_.isArray(tmpls)) {
 				templates = tmpls;
@@ -57,31 +38,12 @@ TemplateLevelSubsCache = (function() {
 			}
 
 			options = _.extend({
-				beforeStart: function beforeStart(templateInstance, id) {
-					if (_debugMode) {
-						console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": before start (" + templateInstance.view.name + ")");
-					}
-				},
-				afterStart: function afterStart(templateInstance, id) {
-					if (_debugMode) {
-						console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": after start (" + templateInstance.view.name + ")");
-					}
-				},
-				onReady: function onReady(templateInstance, id) {
-					if (_debugMode) {
-						console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": on ready (" + templateInstance.view.name + ")");
-					}
-				},
-				beforeStop: function beforeStop(templateInstance, id) {
-					if (_debugMode) {
-						console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": before stop (" + templateInstance.view.name + ")");
-					}
-				},
-				afterStop: function afterStop(templateInstance, id) {
-					if (_debugMode) {
-						console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": after stop (" + templateInstance.view.name + ")");
-					}
-				},
+				startOnCreated: true,
+				beforeStart: null,
+				afterStart: null,
+				onReady: null,
+				beforeStop: null,
+				afterStop: null,
 			}, options);
 
 			templates.forEach(function(template) {
@@ -123,7 +85,7 @@ TemplateLevelSubsCache = (function() {
 								instance.cachedSubscription.__cachedSubscriptionStarted[id] = true;
 
 								instance.autorun(function overallSubscriptionRoutine(c) {
-									var _subscriptionArgs = instance.cachedSubscription.__cachedSubscriptionArgs[id].map(x => _.isFunction(x) ? x() : x);
+									var _subscriptionArgs = instance.cachedSubscription.__cachedSubscriptionArgs[id].map(x => _.isFunction(x) ? x(instance) : x);
 									if (!c.firstRun) {
 										var subAndComp = instance.cachedSubscription.getSubInfo(id);
 										if (!subAndComp) {
@@ -145,9 +107,17 @@ TemplateLevelSubsCache = (function() {
 										if (_debugMode) {
 											console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": " + (c.firstRun ? "Starting" : "Restarting") + "...", EJSON.stringify(_subscriptionArgs), "(" + instance.view.name + ")");
 										}
+
+										// Before Start
 										if (_.isFunction(options.beforeStart)) {
-											options.beforeStart(instance, id);
+											Tracker.nonreactive(function() {
+												options.beforeStart(instance, id);
+											});
 										}
+										if (_debugMode) {
+											console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": before start (" + instance.view.name + ")");
+										}
+
 										instance.cachedSubscription.__cachedSubscriptionIdx += 1;
 
 										var newIdx = instance.cachedSubscription.__cachedSubscriptionIdx;
@@ -169,14 +139,26 @@ TemplateLevelSubsCache = (function() {
 												if (sub.ready()) {
 													instance.cachedSubscription.__cachedSubscriptionReady[newIdx].set(true);
 													if (_.isFunction(options.onReady)) {
-														options.onReady(instance, id);
+														Tracker.nonreactive(function() {
+															options.onReady(instance, id);
+														});
+													}
+													if (_debugMode) {
+														console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": on ready (" + instance.view.name + ")");
 													}
 													c_r.stop();
 												}
 											});
 										}, 0);
+
+										// After Start
 										if (_.isFunction(options.afterStart)) {
-											options.afterStart(instance, id);
+											Tracker.nonreactive(function() {
+												options.afterStart(instance, id);
+											});
+										}
+										if (_debugMode) {
+											console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": after start (" + instance.view.name + ")");
 										}
 									}, 0);
 								});
@@ -189,9 +171,17 @@ TemplateLevelSubsCache = (function() {
 									if (_debugMode) {
 										console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": Stopping...", EJSON.stringify(subAndComp.args), "(" + instance.view.name + ")");
 									}
+
+									// Before Stop
 									if (_.isFunction(options.beforeStop)) {
-										options.beforeStop(instance, id);
+										Tracker.nonreactive(function() {
+											options.beforeStop(instance, id);
+										});
 									}
+									if (_debugMode) {
+										console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": before stop (" + instance.view.name + ")");
+									}
+
 									subAndComp.sub.stop();
 									if (stopOverallComputation && !!subAndComp.computation && !subAndComp.computation.stopped) {
 										subAndComp.computation.stop();
@@ -202,8 +192,15 @@ TemplateLevelSubsCache = (function() {
 										console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": Missing ready computation. (Args: " + EJSON.stringify(subAndComp.args) + ")", "(" + instance.view.name + ")");
 									}
 									instance.cachedSubscription.__cachedSubscriptionStarted[id] = false;
+
+									// After Stop
 									if (_.isFunction(options.afterStop)) {
-										options.afterStop(instance, id);
+										Tracker.nonreactive(function() {
+											options.afterStop(instance, id);
+										});
+									}
+									if (_debugMode) {
+										console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": after stop (" + instance.view.name + ")");
 									}
 								}
 							},
@@ -266,15 +263,25 @@ TemplateLevelSubsCache = (function() {
 					instance.cachedSubscription.__cachedSubscriptionArgs[subId] = subscriptionArgs;
 				});
 
-				template.onRendered(function tlsc_onRendered() {
-					var instance = this;
-					if (_debugMode) {
-						console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onRendered for " + subId);
-					}
-					instance.cachedSubscription.startSub(subId);
-				});
+				if (options.startOnCreated) {
+					template.onRendered(function TemplateLevelSubsCache_onCreated() {
+						var instance = this;
+						if (_debugMode) {
+							console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onCreated for " + subId);
+						}
+						instance.cachedSubscription.startSub(subId);
+					});
+				} else {
+					template.onRendered(function TemplateLevelSubsCache_onRendered() {
+						var instance = this;
+						if (_debugMode) {
+							console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onRendered for " + subId);
+						}
+						instance.cachedSubscription.startSub(subId);
+					});
+				}
 
-				template.onDestroyed(function tlsc_onDestroyed() {
+				template.onDestroyed(function TemplateLevelSubsCache_onDestroyed() {
 					var instance = this;
 					if (_debugMode) {
 						console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onDestroyed for " + subId);
@@ -283,15 +290,15 @@ TemplateLevelSubsCache = (function() {
 				});
 
 				template.helpers({
+					cachedSubReady: id => Template.instance().cachedSubscription.subReady(id),
 					allCachedSubsReady: () => Template.instance().cachedSubscription.cachedSubsReady(),
 					allSubsReady: () => Template.instance().cachedSubscription.allSubsReady(),
-					cachedSubReady: id => Template.instance().cachedSubscription.subReady(id),
 				});
 			});
 
 		});
 
-		return subsCache;
+		return tlscInstance;
 	});
 
 	return tlsc;

@@ -73,14 +73,18 @@ if (Meteor.isClient) {
 		this.subscribe('all');
 	});
 
-	TLSC.cachedSubscription(Template.hello2, 'boo-step-1', ['boo-step-1',
+	TLSC.prepareCachedSubscription(Template.hello2, 'boo-step-1', ['boo-step-1',
 		function() {
 			var thisIdx = idx1.get();
 			console.log('[Sub Step 1|Args] idx1: ' + thisIdx);
 			return thisIdx;
 		}
 	]);
-	TLSC.cachedSubscription(Template.hello2, 'hoo-step-2', ['hoo-step-2', hooArg]);
+	TLSC.prepareCachedSubscription(
+		Template.hello2,
+		'hoo-step-2', ['hoo-step-2', hooArg], {
+			startOnCreated: false
+		});
 
 	Template.hello2.onCreated(function() {
 		hello2 = this;
