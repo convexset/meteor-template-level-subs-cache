@@ -15,7 +15,7 @@ ccorcos:subs-cache@0.1.0
 check@1.1.0
 coffeescript@1.0.11
 convexset:package-utils@0.1.9
-convexset:template-level-subs-cache@0.1.0
+convexset:template-level-subs-cache@0.0.1
 ddp@1.2.2
 ddp-client@1.2.1
 ddp-common@1.2.2

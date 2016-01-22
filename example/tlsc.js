@@ -59,15 +59,15 @@ if (Meteor.isClient) {
 		return indices;
 	};
 	Tracker.autorun(function() {
-        var indices = Boo.find().map(x => x.idx1);
-        console.log('[Autorun] Indices in Boo: [' + indices.join(', ') + ']');
-        return indices;
-    });
+		var indices = Boo.find().map(x => x.idx1);
+		console.log('[Autorun] Indices in Boo: [' + indices.join(', ') + ']');
+		return indices;
+	});
 
 	TemplateLevelSubsCache.DEBUG_MODE = true;
 	var TLSC = TemplateLevelSubsCache.makeCache({
-        expireAfter: 0.0166667 * 2,
-    });
+		expireAfter: 0.0166667 * 2,
+	});
 
 	Template.hello1.onCreated(function() {
 		this.subscribe('all');
@@ -82,22 +82,31 @@ if (Meteor.isClient) {
 	]);
 	TLSC.cachedSubscription(Template.hello2, 'hoo-step-2', ['hoo-step-2', hooArg]);
 
-    Template.hello2.onCreated(function() {
-        hello2 = this;
-    });
+	Template.hello2.onCreated(function() {
+		hello2 = this;
+	});
 
-    Template.hello2.onRendered(function() {
-        var instance = this;
+	Template.hello2.onRendered(function() {
+		var instance = this;
 
-        Tracker.autorun(function (c) {
-            if (instance.cachedSubscription.allSubsReady()) {
-                console.log('--- [hello2] all subs ready ---');
-                c.stop();
-            } else {
-                console.log('--- [hello2] all subs not ready yet ---');
-            }
-        });
-    });
+		['boo-step-1', 'hoo-step-2'].forEach(function(subId) {
+			Tracker.autorun(function() {
+				if (instance.cachedSubscription.cachedSubReady(subId)) {
+					console.log('--- [hello2] ' + subId + ' ready ---');
+				} else {
+					console.log('--- [hello2] ' + subId + ' not ready yet ---');
+				}
+			});
+		});
+
+		Tracker.autorun(function() {
+			if (instance.cachedSubscription.allSubsReady()) {
+				console.log('--- [hello2] all subs ready ---');
+			} else {
+				console.log('--- [hello2] all subs not ready yet ---');
+			}
+		});
+	});
 
 	_.forEach({
 		BooItems: function() {
