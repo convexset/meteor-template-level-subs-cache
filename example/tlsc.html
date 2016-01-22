@@ -1,0 +1,59 @@
+<head>
+	<title>tlsc</title>
+</head>
+
+<body>
+	<h1>Instructions</h1>
+	<ul>
+		<li><code>Mongo.Collection</code>'s <code>Boo</code> and <code>Hoo</code> are globally accessible</li>
+		<li><code>idx1</code> is a <code>ReactiveVar</code> that is globally accessible</li>
+		<li>The first subscription takes a "reactive" argument via <code>idx1.get()</code></li>
+		<li>The second subscription takes a "reactive" argument via <code>Boo.find().map(x => x.idx1)</code></li>
+		<li>Go to the console and use <code>idx1.set(newValue)</code> and watch the reactivity in action.</li>
+		<li>Since the subscriptions are cached... Clearly there will be a bit of a lag between clearing stuff. Here it is about 2 sec.</li>
+	</ul>
+
+	<hr>	
+
+	{{> hello2}}
+	
+	<hr>
+	
+	<!-- {{> hello1}} -->
+</body>
+
+<template name="hello1">
+	<h1>All Items</h1>
+	
+	<h3>Boo</h3>
+	<ul>
+		{{#each BooItems}}
+			<li>({{idx1}}, {{content}})</li>
+		{{/each}}
+	</ul>
+	
+	<h3>Hoo</h3>
+	<ul>
+		{{#each HooItems}}
+			<li>({{idx1}}, {{idx2}}, {{item}})</li>
+		{{/each}}
+	</ul>
+</template>
+
+<template name="hello2">
+	<h1>Reactive Joins</h1>
+	
+	<h3>Boo</h3>
+	<ul>
+		{{#each BooItems}}
+			<li>({{idx1}}, {{content}})</li>
+		{{/each}}
+	</ul>
+	
+	<h3>Hoo</h3>
+	<ul>
+		{{#each HooItems}}
+			<li>({{idx1}}, {{idx2}}, {{item}})</li>
+		{{/each}}
+	</ul>
+</template>
