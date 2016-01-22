@@ -9,7 +9,7 @@
 		<li><code>idx1</code> is a <code>ReactiveVar</code> that is globally accessible</li>
 		<li>The first subscription takes a "reactive" argument via <code>idx1.get()</code></li>
 		<li>The second subscription takes a "reactive" argument via <code>Boo.find().map(x => x.idx1)</code></li>
-		<li>Go to the console and use <code>idx1.set(newValue)</code> and watch the reactivity in action.</li>
+		<li>Go to the console and use <code>idx1.set(newValue)</code> and watch the reactivity in action. (Use values in 0, 1, ..., 9)</li>
 		<li>Since the subscriptions are cached... Clearly there will be a bit of a lag between clearing stuff. Here it is about 2 sec.</li>
 	</ul>
 
@@ -19,7 +19,7 @@
 	
 	<hr>
 	
-	<!-- {{> hello1}} -->
+	{{> hello1}}
 </body>
 
 <template name="hello1">
@@ -27,14 +27,14 @@
 	
 	<h3>Boo</h3>
 	<ul>
-		{{#each BooItems}}
+		{{#each BooMirrorItems}}
 			<li>({{idx1}}, {{content}})</li>
 		{{/each}}
 	</ul>
 	
 	<h3>Hoo</h3>
 	<ul>
-		{{#each HooItems}}
+		{{#each HooMirrorItems}}
 			<li>({{idx1}}, {{idx2}}, {{item}})</li>
 		{{/each}}
 	</ul>

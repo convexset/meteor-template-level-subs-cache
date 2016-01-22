@@ -39,6 +39,7 @@ TemplateLevelSubsCache = (function() {
 
 			options = _.extend({
 				startOnCreated: true,
+				expireAfter: null,
 				beforeStart: null,
 				afterStart: null,
 				onReady: null,
@@ -122,7 +123,14 @@ TemplateLevelSubsCache = (function() {
 
 										var newIdx = instance.cachedSubscription.__cachedSubscriptionIdx;
 										instance.cachedSubscription.__cachedSubscriptionId.set(id, newIdx);
-										var sub = subsCache.subscribe.apply(subsCache, _subscriptionArgs);
+
+										var sub;
+										if (typeof options.expireAfter === "number") {
+											sub = subsCache.subscribeFor.apply(subsCache, [options.expireAfter].concat(_subscriptionArgs));
+										} else {
+											sub = subsCache.subscribe.apply(subsCache, _subscriptionArgs);
+										}
+
 										instance.cachedSubscription.__cachedSubscriptionsAllReady.set(newIdx);
 										instance.cachedSubscription.__cachedSubscriptionReady[newIdx] = new ReactiveVar(false);
 

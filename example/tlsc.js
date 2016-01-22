@@ -1,6 +1,8 @@
 /* global Fake: true */
 /* global Boo: true */
 /* global Hoo: true */
+/* global BooMirror: true */
+/* global HooMirror: true */
 /* global idx1: true */
 /* global TemplateLevelSubsCache: true */
 /* global Template: true */
@@ -8,35 +10,42 @@
 
 Boo = new Mongo.Collection("boo");
 Hoo = new Mongo.Collection("hoo");
+BooMirror = new Mongo.Collection("boo-mirror");
+HooMirror = new Mongo.Collection("hoo-mirror");
 idx1 = new ReactiveVar(0);
 
 if (Meteor.isServer) {
+	//////////////////////////////////////////////////////////////////////
+	// Create data set
+	//////////////////////////////////////////////////////////////////////
 	Meteor.startup(function() {
 		Boo.remove({});
 		Hoo.remove({});
+		BooMirror.remove({});
+		HooMirror.remove({});
 		_.range(10).forEach(function(idx1) {
 			var items = _.range(2 + Math.floor(5 * Math.random())).map(() => Fake.word());
-			Boo.insert({
+			var entry = {
 				idx1: idx1,
 				content: items.join(", "),
-			});
+			};
+			Boo.insert(entry);
+			BooMirror.insert(entry);
 			items.forEach(function(item, idx2) {
-				Hoo.insert({
+				var entry = {
 					idx1: idx1,
 					idx2: idx2,
 					item: item,
-				});
+				};
+				Hoo.insert(entry);
+				HooMirror.insert(entry);
 			});
 		});
 	});
 
-	Meteor.publish('all', function() {
-		return [
-			Boo.find(),
-			Hoo.find(),
-		];
-	});
-
+	//////////////////////////////////////////////////////////////////////
+	// Publish the data
+	//////////////////////////////////////////////////////////////////////
 	Meteor.publish('boo-step-1', function(idx1) {
 		return Boo.find({
 			idx1: idx1
@@ -50,9 +59,30 @@ if (Meteor.isServer) {
 			}
 		});
 	});
+
+	//////////////////////////////////////////////////////////////////////
+	// Publish a "copy" of the data
+	//////////////////////////////////////////////////////////////////////
+	Meteor.publish('all', function() {
+		return [
+			BooMirror.find(),
+			HooMirror.find(),
+		];
+	});
 }
 
 if (Meteor.isClient) {
+	//////////////////////////////////////////////////////////////////////
+	// Subscribe to the "copy" of the data (to display "for reference")
+	//////////////////////////////////////////////////////////////////////
+	Template.hello1.onCreated(function() {
+		this.subscribe('all');
+	});
+
+	//////////////////////////////////////////////////////////////////////
+	// Show Values of idx1 Available in the First Collection via the
+	// first subscription for use as a parameter in the second subscription
+	//////////////////////////////////////////////////////////////////////
 	var hooArg = function hooArg() {
 		var indices = Boo.find().map(x => x.idx1);
 		console.log('[Sub Step 2|Args] Indices in Boo: [' + indices.join(', ') + ']');
@@ -64,60 +94,79 @@ if (Meteor.isClient) {
 		return indices;
 	});
 
+	//////////////////////////////////////////////////////////////////////
+	// The TemplateLevelSubsCache code proper
+	//////////////////////////////////////////////////////////////////////
+
+	// Turn debug mode on to spam the console with lifecycle status updates
 	TemplateLevelSubsCache.DEBUG_MODE = true;
+
+	// Make a cache where stuff is removed two seconds after a sub is stopped
 	var TLSC = TemplateLevelSubsCache.makeCache({
 		expireAfter: 0.0166667 * 2,
 	});
 
-	Template.hello1.onCreated(function() {
-		this.subscribe('all');
-	});
-
+	// Create the "step 1" sub
+	// Keep stuff for 5 sec after stopping
 	TLSC.prepareCachedSubscription(Template.hello2, 'boo-step-1', ['boo-step-1',
 		function() {
 			var thisIdx = idx1.get();
 			console.log('[Sub Step 1|Args] idx1: ' + thisIdx);
 			return thisIdx;
 		}
-	]);
+	], {
+		expireAfter: 0.0166667 * 5,
+	});
+
+	// Create the "step 2" sub
 	TLSC.prepareCachedSubscription(
 		Template.hello2,
 		'hoo-step-2', ['hoo-step-2', hooArg], {
 			startOnCreated: false
-		});
+		}
+	);
 
+	// Expose the template instance
 	Template.hello2.onCreated(function() {
 		hello2 = this;
 	});
 
+	// Some onReady notifications for individual subs and all subs
 	Template.hello2.onRendered(function() {
 		var instance = this;
 
 		['boo-step-1', 'hoo-step-2'].forEach(function(subId) {
 			Tracker.autorun(function() {
 				if (instance.cachedSubscription.cachedSubReady(subId)) {
-					console.log('--- [hello2] ' + subId + ' ready ---');
+					console.log('~~~~~~ [hello2] ' + subId + ' ready ~~~~~~');
 				} else {
-					console.log('--- [hello2] ' + subId + ' not ready yet ---');
+					console.log('~~~~~~ [hello2] ' + subId + ' not ready yet ~~~~~~');
 				}
 			});
 		});
 
 		Tracker.autorun(function() {
 			if (instance.cachedSubscription.allSubsReady()) {
-				console.log('--- [hello2] all subs ready ---');
+				console.log('====== [hello2] all subs ready ======');
 			} else {
-				console.log('--- [hello2] all subs not ready yet ---');
+				console.log('====== [hello2] all subs not ready yet ======');
 			}
 		});
 	});
 
+	// For the heck of it, make all data views global helpers
 	_.forEach({
 		BooItems: function() {
 			return Boo.find();
 		},
 		HooItems: function() {
 			return Hoo.find();
+		},
+		BooMirrorItems: function() {
+			return BooMirror.find();
+		},
+		HooMirrorItems: function() {
+			return HooMirror.find();
 		}
 	}, function(fn, name) {
 		Template.registerHelper(name, fn);

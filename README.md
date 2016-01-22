@@ -1,6 +1,10 @@
 # TemplateLevelSubsCache
 
-`TemplateLevelSubsCache` is a subscriptions cache that works at a "template-level". Meaning that cached subscriptions behave like [template-level subscriptions](http://docs.meteor.com/#/full/Blaze-TemplateInstance-subscribe) wherein subscriptions are started `onCreated` or `onRendered`
+`TemplateLevelSubsCache` is a subscriptions cache that works at a "template-level". Meaning that cached subscriptions behave like [template-level subscriptions](http://docs.meteor.com/#/full/Blaze-TemplateInstance-subscribe) wherein subscriptions are started `onCreated` or `onRendered`.
+
+Subscription arguments can be functions that are evaluated when the subscription is started. Furthermore, they may also be reactive data sources, allowing the realization of "self-rolled" reactive joins.
+
+The example in the [linked GitHub repository](https://github.com/convexset/meteor-template-level-subs-cache) provides an demonstration of such a client-side join.
 
 ## Table of Contents
 
@@ -13,7 +17,8 @@
     - [Additional Options](#additional-options)
   - [Template Helpers](#template-helpers)
   - [Functionality on Template Instances](#functionality-on-template-instances)
-  - [Debug](#debug)
+  - [Debug Mode](#debug-mode)
+- [Notes](#notes)
 
 ## Install
 
@@ -117,6 +122,7 @@ TLSC.prepareCachedSubscription(
 
 For those with a touch of OCD, each subscription may be "prepared" in with more options:
  - `startOnCreated`: determines when the subscription starts (`onCreated` if `true` or `onRendered` if `false`) (default: `true`)
+ - `expireAfter`: provide an `expireAfter` value for a particular subscription (default: use pre-specified value)
  - `beforeStart`: a callback function that is called before the subscription is started
  - `afterStart`: a callback function that is called after the subscription is started
  - `onReady`: a callback function that is called after the subscription is ready
@@ -166,6 +172,10 @@ There is additional functionality, but it should not be necessary to use them di
  - `templateInstance.cachedSubscription.stopSub(id, stopOverallComputation = true)`
  - `templateInstance.cachedSubscription.restartSub(id)`
 
-### Debug
+## Debug Mode
 
 Set `TemplateLevelSubsCache.DEBUG_MODE` to `true` to turn on debug messages.
+
+## Notes
+
+If there is the need for functionality to remove a subscription from the cache immediately, please raise an issue. Presently, there seems to be no practical need for that functionality.
