@@ -112,7 +112,7 @@ TemplateLevelSubsCache = (function() {
 										// Before Start
 										if (_.isFunction(options.beforeStart)) {
 											Tracker.nonreactive(function() {
-												options.beforeStart(instance, id);
+												options.beforeStart(instance, id, _subscriptionArgs);
 											});
 										}
 										if (_debugMode) {
@@ -148,7 +148,7 @@ TemplateLevelSubsCache = (function() {
 													instance.cachedSubscription.__cachedSubscriptionReady[newIdx].set(true);
 													if (_.isFunction(options.onReady)) {
 														Tracker.nonreactive(function() {
-															options.onReady(instance, id);
+															options.onReady(instance, id, _subscriptionArgs);
 														});
 													}
 													if (_debugMode) {
@@ -162,7 +162,7 @@ TemplateLevelSubsCache = (function() {
 										// After Start
 										if (_.isFunction(options.afterStart)) {
 											Tracker.nonreactive(function() {
-												options.afterStart(instance, id);
+												options.afterStart(instance, id, _subscriptionArgs);
 											});
 										}
 										if (_debugMode) {
@@ -183,7 +183,7 @@ TemplateLevelSubsCache = (function() {
 									// Before Stop
 									if (_.isFunction(options.beforeStop)) {
 										Tracker.nonreactive(function() {
-											options.beforeStop(instance, id);
+											options.beforeStop(instance, id, subAndComp.args);
 										});
 									}
 									if (_debugMode) {
@@ -204,7 +204,7 @@ TemplateLevelSubsCache = (function() {
 									// After Stop
 									if (_.isFunction(options.afterStop)) {
 										Tracker.nonreactive(function() {
-											options.afterStop(instance, id);
+											options.afterStop(instance, id, subAndComp.args);
 										});
 									}
 									if (_debugMode) {

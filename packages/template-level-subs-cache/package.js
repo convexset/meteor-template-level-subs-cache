@@ -1,7 +1,7 @@
 Package.describe({
 	name: 'convexset:template-level-subs-cache',
-	version: '0.1.0',
-	summary: 'A template-level subscriptions cache with reactive parameters',
+	version: '0.1.1',
+	summary: 'A template-level subscriptions cache providing for reactive parameters',
 	git: 'https://github.com/convexset/meteor-template-level-subs-cache',
 	documentation: '../../README.md'
 });

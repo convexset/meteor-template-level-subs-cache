@@ -35,11 +35,10 @@ Caches have a configurable capacity (`cacheLimit`) to limit the maximum number o
 So...
 
 ```javascript
-    var TLSC = TemplateLevelSubsCache.makeCache({
-        startOnCreated: true,
-        expireAfter: 2,  // 2 minutes
-        cacheLimit: -1,  // unlimited capacity
-    });
+var TLSC = TemplateLevelSubsCache.makeCache({
+    expireAfter: 2,  // 2 minutes
+    cacheLimit: -1,  // unlimited capacity
+});
 ```
 
 (`TemplateLevelSubsCache` rides atop [`ccorcos:subs-cache`](https://atmospherejs.com/ccorcos/subs-cache) uses instances of that internally.)
@@ -137,14 +136,14 @@ Here is an example:
 TLSC.prepareCachedSubscription(
     Template.SomeTemplate,
     'some-reactive-subscription',
-    ['some-reactive-subscription', () => Meteor.userId(), (instance) => instance.someReactiveVar.get()],
+    ['some-reactive-subscription', () => Meteor.userId(), instance => instance.someReactiveVar.get()],
     {
         startOnCreated: true,
-        beforeStart: (instance, id) => console.log('beforeStart', id),
-        afterStart: (instance, id) => console.log('afterStart', id),
-        onReady: (instance, id) => console.log('onReady', id),
-        beforeStop: (instance, id) => console.log('beforeStop', id),
-        afterStop: (instance, id) => console.log('afterStop', id),
+        beforeStart: (instance, id, currentArgs) => console.log('beforeStart', id, currentArgs),
+        afterStart: (instance, id, currentArgs) => console.log('afterStart', id, currentArgs),
+        onReady: (instance, id, currentArgs) => console.log('onReady', id, currentArgs),
+        beforeStop: (instance, id, currentArgs) => console.log('beforeStop', id, currentArgs),
+        afterStop: (instance, id, currentArgs) => console.log('afterStop', id, currentArgs),
     }
 );
 ```
