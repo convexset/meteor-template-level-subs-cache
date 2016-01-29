@@ -90,7 +90,7 @@ TemplateLevelSubsCache = (function() {
 									if (!c.firstRun) {
 										var subAndComp = instance.cachedSubscription.getSubInfo(id);
 										if (!subAndComp) {
-											throw new Meteor.Error('unexpected-missing-subscription-info-for-existing-subscription');
+											throw new Meteor.Error('unexpected-missing-subscription-info-for-existing-subscription', id);
 										}
 										if (_debugMode) {
 											console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": Stopping prior to restart. Argument change " + EJSON.stringify(subAndComp.args) + " --> " + EJSON.stringify(_subscriptionArgs), "(" + instance.view.name + ")");
@@ -174,7 +174,7 @@ TemplateLevelSubsCache = (function() {
 							stopSub: function stopSub(id, stopOverallComputation = true) {
 								var subAndComp = instance.cachedSubscription.getSubInfo(id);
 								if (!subAndComp) {
-									throw new Meteor.Error('no-started-sub-with-id');
+									throw new Meteor.Error('no-started-sub-with-id', id);
 								} else {
 									if (_debugMode) {
 										console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": Stopping...", EJSON.stringify(subAndComp.args), "(" + instance.view.name + ")");
@@ -264,7 +264,7 @@ TemplateLevelSubsCache = (function() {
 						return instance.cachedSubscription.__cachedSubscriptionList.get().map(x => x);
 					});
 					if (subsNameList.indexOf(subId) > -1) {
-						throw new Meteor.Error("id-already-exists", "subId exists: " + subId);
+						throw new Meteor.Error("id-already-exists", subId);
 					}
 					subsNameList.push(subId);
 					instance.cachedSubscription.__cachedSubscriptionList.set(subsNameList);
