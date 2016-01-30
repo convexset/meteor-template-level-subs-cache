@@ -190,26 +190,52 @@ TemplateLevelSubsCache = (function() {
 										console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": before stop (" + instance.view.name + ")");
 									}
 
-									subAndComp.sub.stop();
-									if (stopOverallComputation && !!subAndComp.computation && !subAndComp.computation.stopped) {
-										subAndComp.computation.stop();
-									}
-									if (!!subAndComp.readyComputation) {
-										subAndComp.readyComputation.stop();
-									} else {
-										console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": Missing ready computation. (Args: " + EJSON.stringify(subAndComp.args) + ")", "(" + instance.view.name + ")");
-									}
-									instance.cachedSubscription.__cachedSubscriptionStarted[id] = false;
+									Tracker.autorun(function(c) {
+										if (subAndComp.sub.ready()) {
+											subAndComp.sub.stop();
+											if (stopOverallComputation && !!subAndComp.computation && !subAndComp.computation.stopped) {
+												subAndComp.computation.stop();
+											}
+											if (!!subAndComp.readyComputation) {
+												subAndComp.readyComputation.stop();
+											} else {
+												console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": Missing ready computation. (Args: " + EJSON.stringify(subAndComp.args) + ")", "(" + instance.view.name + ")");
+											}
+											instance.cachedSubscription.__cachedSubscriptionStarted[id] = false;
 
-									// After Stop
-									if (_.isFunction(options.afterStop)) {
-										Tracker.nonreactive(function() {
-											options.afterStop(instance, id, subAndComp.args);
-										});
-									}
-									if (_debugMode) {
-										console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": after stop (" + instance.view.name + ")");
-									}
+											// After Stop
+											if (_.isFunction(options.afterStop)) {
+												Tracker.nonreactive(function() {
+													options.afterStop(instance, id, subAndComp.args);
+												});
+											}
+											if (_debugMode) {
+												console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": after stop (" + instance.view.name + ")");
+											}
+											subAndComp.sub.stop();
+											if (stopOverallComputation && !!subAndComp.computation && !subAndComp.computation.stopped) {
+												subAndComp.computation.stop();
+											}
+											if (!!subAndComp.readyComputation) {
+												subAndComp.readyComputation.stop();
+											} else {
+												console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": Missing ready computation. (Args: " + EJSON.stringify(subAndComp.args) + ")", "(" + instance.view.name + ")");
+											}
+											instance.cachedSubscription.__cachedSubscriptionStarted[id] = false;
+
+											// After Stop
+											if (_.isFunction(options.afterStop)) {
+												Tracker.nonreactive(function() {
+													options.afterStop(instance, id, subAndComp.args);
+												});
+											}
+											if (_debugMode) {
+												console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": after stop (" + instance.view.name + ")");
+											}
+
+											c.stop();
+										}
+									});
 								}
 							},
 							restartSub: function restartSub(id) {
