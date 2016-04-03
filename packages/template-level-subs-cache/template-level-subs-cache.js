@@ -1,4 +1,5 @@
 /* global TemplateLevelSubsCache: true */
+/* global DefaultSubscriptions: true */
 /* global SubsCache: true */
 /* global PackageUtilities: true */
 
@@ -276,8 +277,9 @@ TemplateLevelSubsCache = (function() {
 							allSubsReady: function allSubsReady() {
 								var allCachedSubsReady = instance.cachedSubscription.allCachedSubsReady();
 								var templateLevelSubsReady = instance.subscriptionsReady();
+								var defaultSubsReady = DefaultSubscriptions.allReady();
 								// avoid short circuit evaluation to achieve proper reactivity
-								var isReady = allCachedSubsReady && templateLevelSubsReady;
+								var isReady = allCachedSubsReady && templateLevelSubsReady && defaultSubsReady;
 								if (_debugMode) {
 									console.log("[Cached Subscription]{" + (new Date()) + "} allSubsReady() --> " + isReady, "(" + instance.view.name + ")");
 								}
@@ -326,13 +328,22 @@ TemplateLevelSubsCache = (function() {
 				template.helpers({
 					cachedSubReady: id => Template.instance().cachedSubscription.subReady(id),
 					allCachedSubsReady: () => Template.instance().cachedSubscription.cachedSubsReady(),
-					allSubsReady: () => Template.instance().cachedSubscription.allSubsReady(),
 				});
 			});
 
 		});
 
 		return tlscInstance;
+	});
+
+	Template.registerHelper('allSubsReady', function allSubsReady() {
+		if (!!Template.instance().cachedSubscription) {
+			return Template.instance().cachedSubscription.allSubsReady();
+		} else {
+			var templateLevelSubsReady = Template.instance().subscriptionsReady();
+			var defaultSubsReady = DefaultSubscriptions.allReady();
+			return templateLevelSubsReady && defaultSubsReady;
+		}
 	});
 
 	return tlsc;

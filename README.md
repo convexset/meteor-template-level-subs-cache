@@ -6,6 +6,10 @@ Subscription arguments can be functions that are evaluated when the subscription
 
 The example in the [linked GitHub repository](https://github.com/convexset/meteor-template-level-subs-cache) provides an demonstration of such a client-side join.
 
+Additional tools are provided in the form of:
+ - [`DefaultSubscriptions`](#defaultsubscriptions): A tool for describing publications which should be subscribed to throughout the application
+ - [`_ListIndexes`](#_listindexes): A development tool for generating instructions for creating indexes/indices for Mongo collection
+
 ## Table of Contents
 
 - [Install](#install)
@@ -18,6 +22,9 @@ The example in the [linked GitHub repository](https://github.com/convexset/meteo
   - [Template Helpers](#template-helpers)
   - [Functionality on Template Instances](#functionality-on-template-instances)
   - [Debug Mode](#debug-mode)
+- [Other Tools](#other-tools)
+  - [`DefaultSubscriptions`](#defaultsubscriptions)
+  - [`_ListIndexes`](#_listindexes)
 - [Notes](#notes)
 
 ## Install
@@ -153,7 +160,7 @@ TLSC.prepareCachedSubscription(
 A number of helpers are added to the associated template
  - `cachedSubReady`: maps the id of a subscription to whether it is currently ready
  - `allCachedSubsReady`: reports whether all cached subscriptions are ready
- - `allSubsReady`: reports whether all cached subscriptions and template-level subscriptions are ready
+ - `allSubsReady`: reports whether all cached subscriptions, template-level subscriptions and ["default subscriptions"](#defaultsubscriptions) are ready; this helper is added globally, and if a template is not configured for cached subscriptions, only the latter two are checked
 
 ### Functionality on Template Instances
 
@@ -161,7 +168,7 @@ Given a template instance `templateInstance` with a cached subscription defined,
 
  - `templateInstance.cachedSubscription.cachedSubReady(id)`: maps the id of a subscription to whether it is currently ready
  - `templateInstance.cachedSubscription.allCachedSubsReady()`: reports whether all cached subscriptions are ready
- - `templateInstance.cachedSubscription.allSubsReady()`: reports whether all cached subscriptions and template-level subscriptions are ready
+ - `templateInstance.cachedSubscription.allSubsReady()`: reports whether all cached subscriptions, template-level subscriptions and ["default subscriptions"](#defaultsubscriptions) are ready
 
 There is additional functionality, but it should not be necessary to use them directly.
 
@@ -174,6 +181,63 @@ There is additional functionality, but it should not be necessary to use them di
 ## Debug Mode
 
 Set `TemplateLevelSubsCache.DEBUG_MODE` to `true` to turn on debug messages.
+
+## Other Tools
+
+### `DefaultSubscriptions`
+
+`DefaultSubscriptions` provides functionality for publications and subscriptions that should be active throughout the application.
+
+Client/Server Methods:
+ - `DefaultSubscriptions.add(pubName, pubFunction = null)`:
+   - (On the Server) if `pubFunction` is a function, uses that as a publication function and publishes it under the name `pubName`
+   - (On the Client) a simple subscription to `pubName` is done
+
+Client Methods:
+ - `DefaultSubscriptions.isReady(pubName)`: checks if the subscription to `pubName` is ready
+ - `DefaultSubscriptions.allReady()`: checks if **all** default subscriptions are ready
+ - `DefaultSubscriptions.listSubscriptionNames()`: lists names of publications
+
+Template Helpers:
+ - `defaultSubscriptionIsReady(pubId)`: returns `DefaultSubscriptions.isReady(pubId)`
+ - `defaultSubscriptionsAllReady`: returns `DefaultSubscriptions.allReady()`
+
+
+### `_ListIndexes`
+
+`_ListIndexes` is a development utility for generating MongoDB commands for creating indices. Here is some sample usage:
+```javascript
+_ListIndexes.addIndex(UserRecord.collection._name, [
+    ['userId', 1],
+]);
+
+_ListIndexes.addIndex(SpecialRecord.collection._name, [
+    ['localeId', 1],
+    ['itemId', 1],
+]);
+```
+
+To list the relevant commands, simply do:
+```javascript
+_ListIndexes.list();  // this is only defined on the server
+                      // ... whereas _ListIndexes.addIndex can be called
+                      // from both the client and server (but it has no effect
+                      // on the client)
+```
+... or, more specifically, something like:
+```javascript
+Meteor.startup(function() {
+    if (Meteor.isServer) {
+        console.log('=================================');
+        console.log('=      Begin Index Listing      =');
+        console.log('=================================');
+        _ListIndexes.list();
+        console.log('=================================');
+        console.log('=       End Index Listing       =');
+        console.log('=================================');
+    }
+});
+```
 
 ## Notes
 
