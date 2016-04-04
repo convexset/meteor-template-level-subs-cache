@@ -71,7 +71,8 @@ _EnsureIndexes = (function() {
 				}]));
 				var extraIndexes = allCurrentIndexes.filter(x => allEnsuredIndexes.indexOf(x) === -1);
 				extraIndexes.forEach(function(key) {
-					console.log('ns: ' + allCurrentIndexesDict[key].ns + '; v: ' + allCurrentIndexesDict[key].v + '; name: ' + allCurrentIndexesDict[key].name + '; key: ' + key);
+					var removeCmd = 'db.' + collectionName + '.dropIndex(' + key + ')';
+					console.log('ns: ' + allCurrentIndexesDict[key].ns + '; v: ' + allCurrentIndexesDict[key].v + '; name: ' + allCurrentIndexesDict[key].name + '; key: ' + key + '\n - ' + removeCmd);
 				});
 			});
 		});
