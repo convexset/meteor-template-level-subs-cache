@@ -20,13 +20,13 @@ if (Meteor.isServer) {
 }
 
 _EnsureIndexes = (function() {
-	var _li = function ListIndexes() {};
-	var li = new _li();
+	var _ei = function EnsureIndexes() {};
+	var ei = new _ei();
 
 	var indexes = {};
-	PackageUtilities.addImmutablePropertyFunction(li, 'addIndex', function addIndex(collectionName, indexEntry) {
+	PackageUtilities.addImmutablePropertyFunction(ei, 'addIndex', function addIndex(collectionName, indexEntry) {
 		if (collectionName instanceof Mongo.Collection) {
-			collectionName = collection._name;
+			collectionName = collectionName._name;
 		}
 
 		if (typeof indexes[collectionName] === "undefined") {
@@ -40,7 +40,7 @@ _EnsureIndexes = (function() {
 	});
 
 	if (Meteor.isServer) {
-		PackageUtilities.addImmutablePropertyFunction(li, 'list', function list() {
+		PackageUtilities.addImmutablePropertyFunction(ei, 'list', function list() {
 			_.forEach(indexes, function(items, collectionName) {
 				if (items.length > 0) {
 					items.forEach(function(entry) {
@@ -50,7 +50,7 @@ _EnsureIndexes = (function() {
 			});
 		});
 
-		PackageUtilities.addImmutablePropertyFunction(li, 'listExtraIndexes', function listExtraIndexes() {
+		PackageUtilities.addImmutablePropertyFunction(ei, 'listExtraIndexes', function listExtraIndexes() {
 			Mongo.Collection.getAll().forEach(function(collectionInfo) {
 				if (!!collectionInfo.instance._connection && !indexes[collectionInfo.name]) {
 					indexes[collectionInfo.name] = [];
@@ -77,5 +77,5 @@ _EnsureIndexes = (function() {
 		});
 	}
 
-	return li;
+	return ei;
 })();
