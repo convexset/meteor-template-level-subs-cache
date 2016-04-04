@@ -25,6 +25,7 @@ Additional tools are provided in the form of:
 - [Other Tools](#other-tools)
   - [`DefaultSubscriptions`](#defaultsubscriptions)
   - [`_EnsureIndexes`](#_EnsureIndexes)
+  - [`Decorators`](#Decorators)
 - [Notes](#notes)
 
 ## Install
@@ -252,6 +253,23 @@ Meteor.startup(function() {
         console.log('=================================');
     }
 });
+```
+
+### Decorators
+
+Here is a simple way to execute some code once all subscriptions are ready:
+```javascript
+Template.MyTemplate.onCreated(
+    TemplateLevelSubsCache.Decorators.whenAllSubsReady(
+        function() {
+            var instance = this;
+            console.info('[' + instance.view.name + '] All Subs Ready.');
+            /* code to run (once) after subs ready */
+        },
+        function() {/* (optional) code to run before each check */},
+        function() {/* (optional) code to run after each check */}
+    )
+);
 ```
 
 ## Notes

@@ -336,6 +336,36 @@ TemplateLevelSubsCache = (function() {
 		return tlscInstance;
 	});
 
+	var Decorators = {};
+	PackageUtilities.addMutablePropertyObject(tlsc, 'Decorators', Decorators);
+	PackageUtilities.addImmutablePropertyFunction(Decorators, 'whenAllSubsReady', function whenAllSubsReady(
+		body = function() {},
+		before = function() {},
+		after = function() {}
+	) {
+		return function() {
+			var instance = this;
+			instance.autorun(function(c) {
+				before.call(instance, c);
+
+				var isReady;
+				if (!!instance.cachedSubscription) {
+					isReady = instance.cachedSubscription.allSubsReady();
+				} else {
+					var templateLevelSubsReady = instance.subscriptionsReady();
+					var defaultSubsReady = DefaultSubscriptions.allReady();
+					isReady = templateLevelSubsReady && defaultSubsReady;
+				}
+
+				if (isReady) {
+					body.call(instance, c);
+					c.stop()
+				}
+				after.call(instance, c);
+			});
+		};
+	});
+
 	Template.registerHelper('allSubsReady', function allSubsReady() {
 		if (!!Template.instance().cachedSubscription) {
 			return Template.instance().cachedSubscription.allSubsReady();
