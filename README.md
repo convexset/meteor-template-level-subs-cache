@@ -8,7 +8,7 @@ The example in the [linked GitHub repository](https://github.com/convexset/meteo
 
 Additional tools are provided in the form of:
  - [`DefaultSubscriptions`](#defaultsubscriptions): A tool for describing publications which should be subscribed to throughout the application
- - [`_ListIndexes`](#_listindexes): A development tool for generating instructions for creating indexes/indices for Mongo collection
+ - [`_EnsureIndexes`](#_EnsureIndexes): A development tool for ensuring the existence of indexes/indices for Mongo collections
 
 ## Table of Contents
 
@@ -24,7 +24,7 @@ Additional tools are provided in the form of:
   - [Debug Mode](#debug-mode)
 - [Other Tools](#other-tools)
   - [`DefaultSubscriptions`](#defaultsubscriptions)
-  - [`_ListIndexes`](#_listindexes)
+  - [`_EnsureIndexes`](#_EnsureIndexes)
 - [Notes](#notes)
 
 ## Install
@@ -203,15 +203,15 @@ Template Helpers:
  - `defaultSubscriptionsAllReady`: returns `DefaultSubscriptions.allReady()`
 
 
-### `_ListIndexes`
+### `_EnsureIndexes`
 
-`_ListIndexes` is a development utility for generating MongoDB commands for creating indices. Here is some sample usage:
+`_EnsureIndexes` is a development tool for ensuring the existence of indexes/indices for Mongo collections. Here is some sample usage:
 ```javascript
-_ListIndexes.addIndex(UserRecord.collection._name, [
+_EnsureIndexes.addIndex(UserRecord.collection._name, [
     ['userId', 1],
 ]);
 
-_ListIndexes.addIndex(SpecialRecord.collection._name, [
+_EnsureIndexes.addIndex(SpecialRecord.collection._name, [
     ['localeId', 1],
     ['itemId', 1],
 ]);
@@ -219,8 +219,8 @@ _ListIndexes.addIndex(SpecialRecord.collection._name, [
 
 To list the relevant commands, simply do:
 ```javascript
-_ListIndexes.list();  // this is only defined on the server
-                      // ... whereas _ListIndexes.addIndex can be called
+_EnsureIndexes.list();  // this is only defined on the server
+                      // ... whereas _EnsureIndexes.addIndex can be called
                       // from both the client and server (but it has no effect
                       // on the client)
 ```
@@ -231,9 +231,24 @@ Meteor.startup(function() {
         console.log('=================================');
         console.log('=      Begin Index Listing      =');
         console.log('=================================');
-        _ListIndexes.list();
+        _EnsureIndexes.list();
         console.log('=================================');
         console.log('=       End Index Listing       =');
+        console.log('=================================');
+    }
+});
+```
+
+To list extra indexes for collections:
+```javascript
+Meteor.startup(function() {
+    if (Meteor.isServer) {
+        console.log('=================================');
+        console.log('=   Begin Extra Index Listing   =');
+        console.log('=================================');
+        _EnsureIndexes.listExtraIndexes();
+        console.log('=================================');
+        console.log('=    End Extra Index Listing    =');
         console.log('=================================');
     }
 });

@@ -15,6 +15,20 @@ HooMirror = new Mongo.Collection("hoo-mirror");
 idx1 = new ReactiveVar(0);
 
 if (Meteor.isServer) {
+	Mongo.Collection.get("boo")._ensureIndex({
+		should: 1,
+		not: -1,
+		be: 1,
+		here: 1
+	});
+	Mongo.Collection.get("hoo")._ensureIndex({
+		also: 1,
+		should: -1,
+		not: -1,
+		be: 1,
+		here: 1
+	});
+
 	//////////////////////////////////////////////////////////////////////
 	// Create data set
 	//////////////////////////////////////////////////////////////////////
@@ -170,5 +184,31 @@ if (Meteor.isClient) {
 		}
 	}, function(fn, name) {
 		Template.registerHelper(name, fn);
+	});
+}
+
+if (Meteor.isServer) {
+	_EnsureIndexes.addIndex('boo', [
+		['idx1', 1]
+	]);
+	Meteor.startup(function() {
+		console.log('=================================');
+		console.log('=      Begin Index Listing      =');
+		console.log('=================================');
+		_EnsureIndexes.list();
+		console.log('=================================');
+		console.log('=       End Index Listing       =');
+		console.log('=================================');
+
+		console.log('');
+		console.log('');
+
+		console.log('=================================');
+		console.log('=   Begin Extra Index Listing   =');
+		console.log('=================================');
+		_EnsureIndexes.listExtraIndexes();
+		console.log('=================================');
+		console.log('=    End Extra Index Listing    =');
+		console.log('=================================');
 	});
 }
