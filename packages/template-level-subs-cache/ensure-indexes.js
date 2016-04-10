@@ -50,7 +50,7 @@ _EnsureIndexes = (function() {
 			});
 		});
 
-		PackageUtilities.addImmutablePropertyFunction(ei, 'listExtraIndexes', function listExtraIndexes() {
+		PackageUtilities.addImmutablePropertyFunction(ei, 'listExtraIndexes', function listExtraIndexes(nsToIgnore = ["meteor.users"]) {
 			Mongo.Collection.getAll().forEach(function(collectionInfo) {
 				if (!!collectionInfo.instance._connection && !indexes[collectionInfo.name]) {
 					indexes[collectionInfo.name] = [];
@@ -71,8 +71,10 @@ _EnsureIndexes = (function() {
 				}]));
 				var extraIndexes = allCurrentIndexes.filter(x => allEnsuredIndexes.indexOf(x) === -1);
 				extraIndexes.forEach(function(key) {
-					var removeCmd = 'db.' + collectionName + '.dropIndex(' + key + ')';
-					console.log('ns: ' + allCurrentIndexesDict[key].ns + '; v: ' + allCurrentIndexesDict[key].v + '; name: ' + allCurrentIndexesDict[key].name + '; key: ' + key + '\n - ' + removeCmd);
+					if (nsToIgnore.indexOf(allCurrentIndexesDict[key].ns) === -1) {
+						var removeCmd = 'db.' + collectionName + '.dropIndex(' + key + ')';
+						console.log('ns: ' + allCurrentIndexesDict[key].ns + '; v: ' + allCurrentIndexesDict[key].v + '; name: ' + allCurrentIndexesDict[key].name + '; key: ' + key + '\n - ' + removeCmd);
+					}
 				});
 			});
 		});
