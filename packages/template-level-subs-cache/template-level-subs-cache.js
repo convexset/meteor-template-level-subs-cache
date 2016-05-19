@@ -299,13 +299,23 @@ TemplateLevelSubsCache = (function() {
 					instance.cachedSubscription.__cachedSubscriptionArgs[subId] = subscriptionArgs;
 				});
 
+				// dealing with the strange case where the template gets destroyed
+				// before the sub starts
+				var allowStartSubCall = true;
+				var startSubCalled = false;
+
 				if (options.startOnCreated) {
 					template.onRendered(function TemplateLevelSubsCache_onCreated() {
 						var instance = this;
 						if (_debugMode) {
 							console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onCreated for " + subId);
 						}
-						instance.cachedSubscription.startSub(subId);
+						if (allowStartSubCall) {
+							instance.cachedSubscription.startSub(subId);
+							startSubCalled = true;
+						} else {
+							console.warn("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onCreated for " + subId + '[PREVENTED!]');
+						}
 					});
 				} else {
 					template.onRendered(function TemplateLevelSubsCache_onRendered() {
@@ -313,16 +323,26 @@ TemplateLevelSubsCache = (function() {
 						if (_debugMode) {
 							console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onRendered for " + subId);
 						}
-						instance.cachedSubscription.startSub(subId);
+						if (allowStartSubCall) {
+							instance.cachedSubscription.startSub(subId);
+							startSubCalled = true;
+						} else {
+							console.warn("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onRendered for " + subId + '[PREVENTED!]');
+						}
 					});
 				}
 
 				template.onDestroyed(function TemplateLevelSubsCache_onDestroyed() {
 					var instance = this;
+					allowStartSubCall = false;
 					if (_debugMode) {
 						console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onDestroyed for " + subId);
 					}
-					instance.cachedSubscription.stopSub(subId);
+					if (startSubCalled) {
+						instance.cachedSubscription.stopSub(subId);
+					} else {
+						console.warn("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onDestroyed for " + subId + " (Sub was never started.)");
+					}
 				});
 
 				template.helpers({
@@ -359,7 +379,7 @@ TemplateLevelSubsCache = (function() {
 
 				if (isReady) {
 					body.call(instance, c);
-					c.stop()
+					c.stop();
 				}
 				after.call(instance, c);
 			});
