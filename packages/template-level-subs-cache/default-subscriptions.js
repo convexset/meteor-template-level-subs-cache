@@ -2,9 +2,11 @@
 
 import { checkNpmVersions } from 'meteor/tmeasday:check-npm-versions';
 checkNpmVersions({
-  'package-utils': '^0.2.1'
+  'package-utils': '^0.2.1',
+  'underscore' : '^1.8.3',
 });
 const PackageUtilities = require('package-utils');
+const _ = require('underscore');
 
 DefaultSubscriptions = (function() {
 	var _dp = function DefaultSubscriptions() {};
@@ -18,7 +20,7 @@ DefaultSubscriptions = (function() {
 		_subPresence = new ReactiveDict();
 	}
 
-	PackageUtilities.addImmutablePropertyFunction(dp, 'add', function addDefaultPublication(pubName, pubFunction = null, subFunction = null) {
+	PackageUtilities.addImmutablePropertyFunction(dp, 'add', function addDefaultPublication(pubName, pubFunction = null) {
 		if (_.isFunction(pubFunction)) {
 			if (Meteor.isServer) {
 				Meteor.publish(pubName, pubFunction);
@@ -33,6 +35,8 @@ DefaultSubscriptions = (function() {
 		}
 	});
 
+	var listSubscriptions;
+
 	if (Meteor.isClient) {
 		PackageUtilities.addImmutablePropertyFunction(dp, 'isReady', function isReady(pubName) {
 			var subPresent = _subPresence.get(pubName);
@@ -43,10 +47,10 @@ DefaultSubscriptions = (function() {
 			}
 		});
 
-		function listSubscriptions() {
+		listSubscriptions = function listSubscriptions() {
 			_subPresence.all();
 			return PackageUtilities.shallowCopy(_subs);
-		}
+		};
 		// PackageUtilities.addImmutablePropertyFunction(dp, 'listSubscriptions', listSubscriptions);
 		PackageUtilities.addImmutablePropertyFunction(dp, 'listSubscriptionNames', Object.keys(listSubscriptions()));
 

@@ -1,6 +1,6 @@
 Package.describe({
 	name: 'convexset:template-level-subs-cache',
-	version: '0.1.4_3',
+	version: '0.1.4_4',
 	summary: 'A template-level subscriptions cache providing for reactive parameters',
 	git: 'https://github.com/convexset/meteor-template-level-subs-cache',
 	documentation: '../../README.md'
@@ -11,7 +11,7 @@ Package.onUse(function(api) {
 	api.versionsFrom('1.3.1');
 
 	api.use([
-		'ecmascript', 'underscore', 'ejson', 'mongo',
+		'ecmascript', 'ejson', 'mongo',
 		'dburles:mongo-collection-instances@0.3.5',
 		'tmeasday:check-npm-versions@0.3.1'
 	]);
@@ -26,7 +26,7 @@ Package.onUse(function(api) {
 	);
 
 	api.addFiles('template-level-subs-cache.js', 'client');
-	api.export('TemplateLevelSubsCache', 'client')
+	api.export('TemplateLevelSubsCache', 'client');
 
 	api.addFiles('default-subscriptions.js');
 	api.export('DefaultSubscriptions');
@@ -37,7 +37,7 @@ Package.onUse(function(api) {
 
 
 Package.onTest(function(api) {
-	api.use(['tinytest', 'ecmascript', 'underscore', 'ejson', ]);
+	api.use(['tinytest', 'ecmascript', 'ejson', ]);
 	api.use('convexset:template-level-subs-cache');
 	api.addFiles(['tests.js', ]);
 	api.addFiles([], 'server');
