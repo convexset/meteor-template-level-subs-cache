@@ -1,5 +1,10 @@
-/* global PackageUtilities: true */
 /* global _EnsureIndexes: true */
+
+import { checkNpmVersions } from 'meteor/tmeasday:check-npm-versions';
+checkNpmVersions({
+  'package-utils': '^0.2.1'
+});
+const PackageUtilities = require('package-utils');
 
 if (Meteor.isServer) {
 	var Future = Npm.require('fibers/future');
