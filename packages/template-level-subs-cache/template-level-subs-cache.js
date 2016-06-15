@@ -288,6 +288,11 @@ TemplateLevelSubsCache = (function() {
 						};
 					}
 
+					// dealing with the strange case where the template gets destroyed
+					// before the sub starts
+					instance.cachedSubscription.__allowStartSubCall = true;
+					instance.cachedSubscription.__startSubCalled = false;
+
 					var subsNameList = Tracker.nonreactive(function() {
 						return instance.cachedSubscription.__cachedSubscriptionList.get().map(x => x);
 					});
@@ -299,10 +304,6 @@ TemplateLevelSubsCache = (function() {
 					instance.cachedSubscription.__cachedSubscriptionArgs[subId] = subscriptionArgs;
 				});
 
-				// dealing with the strange case where the template gets destroyed
-				// before the sub starts
-				var allowStartSubCall = true;
-				var startSubCalled = false;
 
 				if (options.startOnCreated) {
 					template.onCreated(function TemplateLevelSubsCache_onCreated() {
@@ -310,9 +311,9 @@ TemplateLevelSubsCache = (function() {
 						if (_debugMode) {
 							console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onCreated for " + subId);
 						}
-						if (allowStartSubCall) {
+						if (instance.cachedSubscription.__allowStartSubCall) {
 							instance.cachedSubscription.startSub(subId);
-							startSubCalled = true;
+							instance.cachedSubscription.__startSubCalled = true;
 						} else {
 							console.warn("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onCreated for " + subId + '[PREVENTED!]');
 						}
@@ -323,9 +324,9 @@ TemplateLevelSubsCache = (function() {
 						if (_debugMode) {
 							console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onRendered for " + subId);
 						}
-						if (allowStartSubCall) {
+						if (instance.cachedSubscription.__allowStartSubCall) {
 							instance.cachedSubscription.startSub(subId);
-							startSubCalled = true;
+							instance.cachedSubscription.__startSubCalled = true;
 						} else {
 							console.warn("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onRendered for " + subId + '[PREVENTED!]');
 						}
@@ -334,11 +335,11 @@ TemplateLevelSubsCache = (function() {
 
 				template.onDestroyed(function TemplateLevelSubsCache_onDestroyed() {
 					var instance = this;
-					allowStartSubCall = false;
+					instance.cachedSubscription.__allowStartSubCall = false;
 					if (_debugMode) {
 						console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onDestroyed for " + subId);
 					}
-					if (startSubCalled) {
+					if (instance.cachedSubscription.__startSubCalled) {
 						instance.cachedSubscription.stopSub(subId);
 					} else {
 						console.warn("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onDestroyed for " + subId + " (Sub was never started.)");
