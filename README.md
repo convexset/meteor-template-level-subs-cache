@@ -100,6 +100,7 @@ TLSC.prepareCachedSubscription(
 
 ... also, they may take the template instance as a parameter...
 
+```
 TLSC.prepareCachedSubscription(
     Template.NewsToday,
     'the-news-today',

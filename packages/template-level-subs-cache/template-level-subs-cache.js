@@ -305,7 +305,7 @@ TemplateLevelSubsCache = (function() {
 				var startSubCalled = false;
 
 				if (options.startOnCreated) {
-					template.onRendered(function TemplateLevelSubsCache_onCreated() {
+					template.onCreated(function TemplateLevelSubsCache_onCreated() {
 						var instance = this;
 						if (_debugMode) {
 							console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onCreated for " + subId);
