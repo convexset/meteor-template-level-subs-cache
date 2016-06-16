@@ -32,6 +32,26 @@ Additional tools are provided in the form of:
 
 This is available as [`convexset:template-level-subs-cache`](https://atmospherejs.com/convexset/template-level-subs-cache) on [Atmosphere](https://atmospherejs.com/). (Install with `meteor add convexset:template-level-subs-cache`.)
 
+If you get an error message like:
+```
+WARNING: npm peer requirements not installed:
+ - package-utils@^0.2.1 not installed.
+          
+Read more about installing npm peer dependencies:
+  http://guide.meteor.com/using-packages.html#peer-npm-dependencies
+```
+It is because, by design, the package does not include instances of these from `npm` to avoid repetition. (In this case, `meteor npm install --save package-utils`.)
+
+See [this](http://guide.meteor.com/using-packages.html#peer-npm-dependencies) or [this](https://atmospherejs.com/tmeasday/check-npm-versions) for more information.
+
+Now, if you see a message like
+```
+WARNING: npm peer requirements not installed:
+underscore@1.5.2 installed, underscore@^1.8.3 needed
+```
+it is because you or something you are using is using Meteor's cruddy old `underscore` package. Install a new version from `npm`. (And, of course, you may use the `npm` version in a given scope via `require("underscore")`.)
+
+
 ## Usage
 
 ### Step 1: Create a Cache
