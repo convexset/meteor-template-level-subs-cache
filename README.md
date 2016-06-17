@@ -225,7 +225,7 @@ Template Helpers:
  - `defaultSubscriptionsAllReady`: returns `DefaultSubscriptions.allReady()`
 
 
-### `_EnsureIndexes`
+### `_EnsureIndexes` (Server Only, Naturally)
 
 `_EnsureIndexes` is a development tool for ensuring the existence of indexes/indices for Mongo collections. Here is some sample usage:
 ```javascript
@@ -241,10 +241,7 @@ _EnsureIndexes.addIndex(SpecialRecord.collection._name, [
 
 To list the relevant commands, simply do:
 ```javascript
-_EnsureIndexes.list();  // this is only defined on the server
-                      // ... whereas _EnsureIndexes.addIndex can be called
-                      // from both the client and server (but it has no effect
-                      // on the client)
+_EnsureIndexes.list();
 ```
 ... or, more specifically, something like:
 ```javascript
