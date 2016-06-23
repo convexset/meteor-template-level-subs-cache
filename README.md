@@ -305,7 +305,7 @@ It is generally advisable that templates be wrapped with an additional "loading"
 {{/IfAllSubsReady}}
 ```
 
-If one reuses the same "still loading" content is everywhere, one might consider creating one's own block helper like that below:
+If one reuses the same "still loading" content everywhere, one might consider creating one's own block helper like that below:
 ```html
 <template name="WhenAllSubsReady">
   {{#IfAllSubsReady}}
