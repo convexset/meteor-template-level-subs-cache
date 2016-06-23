@@ -12,6 +12,10 @@ Additional tools are provided in the form of:
 
 ## Table of Contents
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+
 - [Install](#install)
 - [Usage](#usage)
   - [Step 1: Create a Cache](#step-1-create-a-cache)
@@ -21,12 +25,14 @@ Additional tools are provided in the form of:
     - [Additional Options](#additional-options)
   - [Template Helpers](#template-helpers)
   - [Functionality on Template Instances](#functionality-on-template-instances)
-  - [Debug Mode](#debug-mode)
+- [Debug Mode](#debug-mode)
 - [Other Tools](#other-tools)
   - [`DefaultSubscriptions`](#defaultsubscriptions)
-  - [`_EnsureIndexes`](#_EnsureIndexes)
-  - [`Decorators`](#Decorators)
+  - [`_EnsureIndexes` (Server Only, Naturally)](#_ensureindexes-server-only-naturally)
+  - [Decorators (in JavaScript and Blaze)](#decorators-in-javascript-and-blaze)
 - [Notes](#notes)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Install
 
@@ -273,7 +279,7 @@ Meteor.startup(function() {
 });
 ```
 
-### Decorators
+### Decorators (in JavaScript and Blaze)
 
 Here is a simple way to execute some code once all subscriptions are ready:
 ```javascript
@@ -290,6 +296,28 @@ Template.MyTemplate.onCreated(
 );
 ```
 
+It is generally advisable that templates be wrapped with an additional "loading" block helper to display nothing prior to the arrival of all relevant data. The following block helper does exactly what one expects it to do:
+```html
+{{#IfAllSubsReady}}
+  Content Here
+{{else}}
+  Loading...
+{{/IfAllSubsReady}}
+```
+
+If one reuses the same "still loading" content is everywhere, one might consider creating one's own block helper like that below:
+```html
+<template name="WhenAllSubsReady">
+  {{#IfAllSubsReady}}
+    {{> Template.contentBlock}}
+  {{else}}
+    Loading...
+  {{/IfAllSubsReady}}
+</template>
+```
+
+Should one use the same loading 
+
 ## Notes
 
-If there is the need for functionality to remove a subscription from the cache immediately, please raise an issue. Presently, there seems to be no practical need for that functionality.
+*If there is the need for functionality to remove a subscription from the cache immediately, please raise an issue. Presently, there seems to be no practical need for that functionality.*
