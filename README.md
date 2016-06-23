@@ -315,8 +315,13 @@ If one reuses the same "still loading" content everywhere, one might consider cr
   {{/IfAllSubsReady}}
 </template>
 ```
+And use it as follows:
+```html
+{{#WhenAllSubsReady}}
+  Content Here
+{{/WhenAllSubsReady}}
+```
 
-Should one use the same loading 
 
 ## Notes
 
