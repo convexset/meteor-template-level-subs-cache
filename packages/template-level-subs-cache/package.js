@@ -1,4 +1,5 @@
 Package.describe({
+	// [validatis:stack]
 	name: 'convexset:template-level-subs-cache',
 	version: '0.1.4_6',
 	summary: 'A template-level subscriptions cache providing for reactive parameters',
