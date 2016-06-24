@@ -119,9 +119,10 @@ TemplateLevelSubsCache = (function() {
 											return;
 										}
 									}
+									var isFirstRun = c.firstRun;
 									setTimeout(function startSubscriptionRoutine() {
 										if (_debugMode) {
-											console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": " + (c.firstRun ? "Starting" : "Restarting") + "...", EJSON.stringify(_subscriptionArgs), "(" + instance.view.name + ")");
+											console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": " + (isFirstRun ? "Starting" : "Restarting") + "...", EJSON.stringify(_subscriptionArgs), "(" + instance.view.name + ")");
 										}
 
 										// Before Start
@@ -374,6 +375,8 @@ TemplateLevelSubsCache = (function() {
 
 		return tlscInstance;
 	});
+
+	PackageUtilities.addImmutablePropertyValue(tlsc, "DEFAULT_CACHE", tlsc.makeCache());
 
 	var Decorators = {};
 	PackageUtilities.addMutablePropertyObject(tlsc, 'Decorators', Decorators);
