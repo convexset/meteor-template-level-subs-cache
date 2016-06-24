@@ -68,6 +68,9 @@ TemplateLevelSubsCache = (function() {
 							__cachedSubscriptionReady: {},
 							__cachedSubscriptionArgs: {},
 							__cachedSubscriptionStarted: {},
+							__allowStartSubCall: {},
+							__startSubCalled: {},
+							__options: {},
 							getSubInfo: function getSubInfo(id) {
 								var _subId = instance.cachedSubscription.__cachedSubscriptionId.get(id);
 								var subInfo = instance.cachedSubscription.__cachedSubscription[_subId];
@@ -88,6 +91,10 @@ TemplateLevelSubsCache = (function() {
 								if (_debugMode) {
 									console.log("[Cached Subscription]{" + (new Date()) + "} Calling startSub(" + id + ")...", "(" + instance.view.name + ")");
 								}
+
+								var subOptions = instance.cachedSubscription.__options[id];
+								var tlscOptions = tlscInstance.options;
+
 								if (!!instance.cachedSubscription.__cachedSubscriptionStarted[id]) {
 									throw new Meteor.Error("sub-already-started", id);
 								}
@@ -118,9 +125,9 @@ TemplateLevelSubsCache = (function() {
 										}
 
 										// Before Start
-										if (_.isFunction(options.beforeStart)) {
+										if (_.isFunction(subOptions.beforeStart)) {
 											Tracker.nonreactive(function() {
-												options.beforeStart(instance, id, _subscriptionArgs);
+												subOptions.beforeStart(instance, id, _subscriptionArgs);
 											});
 										}
 										if (_debugMode) {
@@ -133,8 +140,8 @@ TemplateLevelSubsCache = (function() {
 										instance.cachedSubscription.__cachedSubscriptionId.set(id, newIdx);
 
 										var sub;
-										if (typeof options.expireAfter === "number") {
-											sub = subsCache.subscribeFor.apply(subsCache, [options.expireAfter].concat(_subscriptionArgs));
+										if (typeof tlscOptions.expireAfter === "number") {
+											sub = subsCache.subscribeFor.apply(subsCache, [tlscOptions.expireAfter].concat(_subscriptionArgs));
 										} else {
 											sub = subsCache.subscribe.apply(subsCache, _subscriptionArgs);
 										}
@@ -154,9 +161,9 @@ TemplateLevelSubsCache = (function() {
 											csRecord.readyComputation = Tracker.autorun(function(c_r) {
 												if (sub.ready()) {
 													instance.cachedSubscription.__cachedSubscriptionReady[newIdx].set(true);
-													if (_.isFunction(options.onReady)) {
+													if (_.isFunction(subOptions.onReady)) {
 														Tracker.nonreactive(function() {
-															options.onReady(instance, id, _subscriptionArgs);
+															subOptions.onReady(instance, id, _subscriptionArgs);
 														});
 													}
 													if (_debugMode) {
@@ -168,9 +175,9 @@ TemplateLevelSubsCache = (function() {
 										}, 0);
 
 										// After Start
-										if (_.isFunction(options.afterStart)) {
+										if (_.isFunction(subOptions.afterStart)) {
 											Tracker.nonreactive(function() {
-												options.afterStart(instance, id, _subscriptionArgs);
+												subOptions.afterStart(instance, id, _subscriptionArgs);
 											});
 										}
 										if (_debugMode) {
@@ -181,6 +188,7 @@ TemplateLevelSubsCache = (function() {
 							},
 							stopSub: function stopSub(id, stopOverallComputation = true) {
 								var subAndComp = instance.cachedSubscription.getSubInfo(id);
+								var subOptions = instance.cachedSubscription.__options[id];
 								if (!subAndComp) {
 									throw new Meteor.Error('no-started-sub-with-id', id);
 								} else {
@@ -189,9 +197,9 @@ TemplateLevelSubsCache = (function() {
 									}
 
 									// Before Stop
-									if (_.isFunction(options.beforeStop)) {
+									if (_.isFunction(subOptions.beforeStop)) {
 										Tracker.nonreactive(function() {
-											options.beforeStop(instance, id, subAndComp.args);
+											subOptions.beforeStop(instance, id, subAndComp.args);
 										});
 									}
 									if (_debugMode) {
@@ -212,9 +220,9 @@ TemplateLevelSubsCache = (function() {
 											instance.cachedSubscription.__cachedSubscriptionStarted[id] = false;
 
 											// After Stop
-											if (_.isFunction(options.afterStop)) {
+											if (_.isFunction(subOptions.afterStop)) {
 												Tracker.nonreactive(function() {
-													options.afterStop(instance, id, subAndComp.args);
+													subOptions.afterStop(instance, id, subAndComp.args);
 												});
 											}
 											if (_debugMode) {
@@ -232,9 +240,9 @@ TemplateLevelSubsCache = (function() {
 											instance.cachedSubscription.__cachedSubscriptionStarted[id] = false;
 
 											// After Stop
-											if (_.isFunction(options.afterStop)) {
+											if (_.isFunction(subOptions.afterStop)) {
 												Tracker.nonreactive(function() {
-													options.afterStop(instance, id, subAndComp.args);
+													subOptions.afterStop(instance, id, subAndComp.args);
 												});
 											}
 											if (_debugMode) {
@@ -297,8 +305,11 @@ TemplateLevelSubsCache = (function() {
 
 					// dealing with the strange case where the template gets destroyed
 					// before the sub starts
-					instance.cachedSubscription.__allowStartSubCall = true;
-					instance.cachedSubscription.__startSubCalled = false;
+					instance.cachedSubscription.__allowStartSubCall[subId] = true;
+					instance.cachedSubscription.__startSubCalled[subId] = false;
+
+					// store options by subId
+					instance.cachedSubscription.__options[subId] = options;
 
 					var subsNameList = Tracker.nonreactive(function() {
 						return instance.cachedSubscription.__cachedSubscriptionList.get().map(x => x);
@@ -318,9 +329,9 @@ TemplateLevelSubsCache = (function() {
 						if (_debugMode) {
 							console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onCreated for " + subId);
 						}
-						if (instance.cachedSubscription.__allowStartSubCall) {
+						if (instance.cachedSubscription.__allowStartSubCall[subId]) {
 							instance.cachedSubscription.startSub(subId);
-							instance.cachedSubscription.__startSubCalled = true;
+							instance.cachedSubscription.__startSubCalled[subId] = true;
 						} else {
 							console.warn("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onCreated for " + subId + '[PREVENTED!]');
 						}
@@ -331,9 +342,9 @@ TemplateLevelSubsCache = (function() {
 						if (_debugMode) {
 							console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onRendered for " + subId);
 						}
-						if (instance.cachedSubscription.__allowStartSubCall) {
+						if (instance.cachedSubscription.__allowStartSubCall[subId]) {
 							instance.cachedSubscription.startSub(subId);
-							instance.cachedSubscription.__startSubCalled = true;
+							instance.cachedSubscription.__startSubCalled[subId] = true;
 						} else {
 							console.warn("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onRendered for " + subId + '[PREVENTED!]');
 						}
@@ -342,11 +353,11 @@ TemplateLevelSubsCache = (function() {
 
 				template.onDestroyed(function TemplateLevelSubsCache_onDestroyed() {
 					var instance = this;
-					instance.cachedSubscription.__allowStartSubCall = false;
+					instance.cachedSubscription.__allowStartSubCall[subId] = false;
 					if (_debugMode) {
 						console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onDestroyed for " + subId);
 					}
-					if (instance.cachedSubscription.__startSubCalled) {
+					if (instance.cachedSubscription.__startSubCalled[subId]) {
 						instance.cachedSubscription.stopSub(subId);
 					} else {
 						console.warn("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onDestroyed for " + subId + " (Sub was never started.)");
