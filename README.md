@@ -9,6 +9,7 @@ The example in the [linked GitHub repository](https://github.com/convexset/meteo
 Additional tools are provided in the form of:
  - [`DefaultSubscriptions`](#defaultsubscriptions): A tool for describing publications which should be subscribed to throughout the application
  - [`_EnsureIndexes`](#_EnsureIndexes): A development tool for ensuring the existence of indexes/indices for Mongo collections
+ - [The Information Bundler](#the-information-bundler-enhancement): A tool for not reducing repeated code in specifying the information requirements of templates
 
 ## Table of Contents
 
@@ -23,6 +24,9 @@ Additional tools are provided in the form of:
     - [Simple Arguments](#simple-arguments)
     - [Reactive Arguments](#reactive-arguments)
     - [Additional Options](#additional-options)
+  - [The Information Bundler Enhancement](#the-information-bundler-enhancement)
+    - [Why](#why)
+    - [Using It](#using-it)
   - [Template Helpers](#template-helpers)
   - [Functionality on Template Instances](#functionality-on-template-instances)
 - [Debug Mode](#debug-mode)
@@ -152,6 +156,27 @@ TLSC.prepareCachedSubscription(
 );
 ```
 
+Often one uses a router with reactive facilities for getting parameters. For example, `() => FlowRouter.getParam("itemId")` might use used as a subscription argument. The same is achieved via:
+```javascript
+TemplateLevelSubsCache.ReactiveParamGetter.fromName("itemId", FlowRouter.getParam.bind(FlowRouter))
+```
+
+It's a bit verbose, but... Perhaps the more general suite of tools it is part of might help.
+ - TemplateLevelSubsCache.ReactiveParamGetter.fromName(name, ReactiveParamGetter)
+   - Generates: `() => ReactiveParamGetter(name)`
+ - TemplateLevelSubsCache.ReactiveParamGetter.fromArrayToArray("itemId", ReactiveParamGetter)
+   - Takes an array of names and maps it to an array of reactive functions like `() => ReactiveParamGetter(name)`
+   - e.g.: `['x', 'y']` maps to `[ReactiveParamGetter('x'), ReactiveParamGetter('y')]`
+ - TemplateLevelSubsCache.ReactiveParamGetter.fromArrayToObj("itemId", ReactiveParamGetter)
+   - Takes an array of names and maps it to object where the keys are the names, and the values are functions like `() => ReactiveParamGetter(name)`
+   - e.g.: `['x', 'y']` maps to `{x: ReactiveParamGetter('x'), y: ReactiveParamGetter('y')}`
+ - TemplateLevelSubsCache.ReactiveParamGetter.fromObjToObj("itemId", ReactiveParamGetter)
+   - Takes an object where the values are names and maps it to object where the values become functions like `() => ReactiveParamGetter(name)`
+   - e.g.: `{a: 'x', b: 'y'}` maps to `{a: ReactiveParamGetter('x'), b: ReactiveParamGetter('y')}`
+
+
+Note: with `FlowRouter`, `FlowRouter.getParam` is a prototype method and should be bound to `FlowRouter` before it is passed in.
+
 #### Additional Options
 
 For those with a touch of OCD, each subscription may be "prepared" in with more options:
@@ -182,6 +207,145 @@ TLSC.prepareCachedSubscription(
     }
 );
 ```
+
+### The Information Bundler Enhancement
+
+#### Why
+
+Consider the following case:
+ - One has three collections in one's app: `"customers"`, `"items"`, `"purchases"`
+ - `"customers"` is associated with a certain publication and some helpers (H:C)
+ - `"items"` is associated with a certain publication and some helpers (H:I)
+ - `"purchases"` is associated with a certain publication and some helpers (H:P)
+ - On templates using data from `"customers"` and `"purchases"`, some additional helpers (H:CP) may be used
+ - On templates using data from `"items"` and `"purchases"`, other additional helpers (H:IP) may be used
+ - On templates using data from all three, yet other additional helpers (H:CIP) may be used
+
+There are a number of templates requiring data from various combinations of the three and it would be good to reduce repetitions in code.
+
+The `InformationBundler` helps through the following:
+ - Describe base information bundles
+ - Associate base information bundles with publications (through subscriptions; zero or more)
+ - Describe the additional resources available when combinations of information bundles are available
+ - Automate the set-up for templates given the names of the required information bundles
+
+Let's be specific:
+ - Base Information Bundles:
+   - `"ib-customers"` with helpers `{getCustomerById, allCustomers}`
+   - `"ib-items"` with helpers `{getItemById, allItems}`
+   - `"ib-purchases"` with helpers `{getPurchaseById, allPurchases}`
+ - Associated Subscriptions:
+   - `"ib-customers"` (say a subscription subscribing, possibly reactively, to a publication of `"customers"`)
+   - `"ib-items"` (say a subscription subscribing, possibly reactively, to a publication of `"items"`)
+   - `"ib-purchases"` (say a subscription subscribing, possibly reactively, to a publication of `"purchases"`)
+ - Supplementary Information Bundles:
+   - `["ib-customers", "ib-purchases"]` with helpers `{customerPurchasesJoin}`
+   - `["ib-items", "ib-purchases"]` with helpers `{itemPurchasesJoin}`
+   - `["ib-customers", "ib-customers", "ib-purchases"]` with helpers `{customerItemPurchasesJoin}`
+
+So a template using bundle `"ib-customers"` would use:
+ - a subscription to `"customers"`
+ - helpers `{getCustomerById, allCustomers}`
+
+And template using bundles `["ib-customers", "ib-items"]` would use:
+ - a subscription to `"customers"`
+ - a subscription to `"items"`
+ - helpers `{getCustomerById, allCustomers, getItemById, allItems}`
+
+And template using bundles `["ib-customers", "ib-purchases"]` would use:
+ - a subscription to `"customers"`
+ - a subscription to `"purchases"`
+ - helpers `{getCustomerById, allCustomers, getPurchaseById, allPurchases, customerPurchasesJoin}`
+
+Note that after specifying the bundles, all that is needed to prepare a template is just the bundle names.
+
+#### Usage by Example
+
+As mentioned, the steps involved are:
+ - Describe base information bundles
+```javascript
+InformationBundler.addBasicInformationBundle({
+    bundleName: "customers",
+    helpers: {
+        getCustomerById: _id => CustomerCollection.findOne({_id: _id}),
+        allCustomers: () => CustomerCollection.find()
+    },
+    // Calling this again with the same name and different helpers will add
+    // more helpers rather than replace all of them. A warning will also be
+    // issued. To suppress the warning, set
+    // knownExtension: true 
+    // (it defaults to false)
+});
+
+InformationBundler.addBasicInformationBundle({/* for "items" */});
+InformationBundler.addBasicInformationBundle({/* for "purchases" */});
+```
+ - Associate base information bundles with publications (through subscriptions; zero or more; the first argument of `InformationBundler.associateSubscription` is the name of the bundle, and the rest are [those of TLSC.prepareCachedSubscription in the same sequence](#step-2-prepare-templates))
+```javascript
+if (Meteor.isServer) {
+    Meteor.publish("all-customers", () => CustomerCollection.find());
+    Meteor.publish("all-items", () => ItemCollection.find());
+    Meteor.publish("all-purchases", () => PurchaseRecordCollection.find());
+}
+
+if (Meteor.isClient) {
+    InformationBundler.associateSubscription({
+        bundleName: "customers",             // the bundle name
+        subName: "customers-sub",            // just a name that should be unique for all cached subs
+                                             // to be placed on a template
+        subscriptionArgs: ["all-customers"], // publication name and then arguments
+        options: {                           // the options as asked for in TLSC.prepareCachedSubscription
+            startOnCreated: true,
+            beforeStart: (instance, id, currentArgs) => console.log('beforeStart', id, currentArgs),
+            afterStart: (instance, id, currentArgs) => console.log('afterStart', id, currentArgs),
+            onReady: (instance, id, currentArgs) => console.log('onReady', id, currentArgs),
+            beforeStop: (instance, id, currentArgs) => console.log('beforeStop', id, currentArgs),
+            afterStop: (instance, id, currentArgs) => console.log('afterStop', id, currentArgs),
+        }
+    });
+
+    InformationBundler.associateSubscription({/* for items */});
+    InformationBundler.associateSubscription({/* for purchases */});
+}
+```
+ - Describe the additional resources available when combinations of information bundles are available
+```javascript
+InformationBundler.addSupplementaryInformationBundle({
+    bundleNames: ["customers", "purchases"],
+    helpers: {
+        customerPurchasesJoin: _id => PurchaseRecordCollection.map(pr => _.extend({
+            customer: CustomerCollection.findOne({_id: pr.customerId})
+        }, pr))
+    }
+});
+
+// and others...
+```
+ - Note that `InformationBundler.addGeneralInformationBundle` is a single argument function that calls `InformationBundler.addSupplementaryInformationBundle` with `bundleNames` set to `[]`, meaning that every time a template is set-up using `InformationBundler`, all helpers passed will be added.
+```
+// These are identical
+InformationBundler.addGeneralInformationBundle({
+    someHelper: someHelper
+});
+
+InformationBundler.addSupplementaryInformationBundle({
+    bundleNames: [],
+    helpers: {
+        someHelper: someHelper
+    }
+});
+```
+ - Automate the set-up for templates given the names of the required information bundles (given a `TemplateLevelSubsCache` instance `TLSCInstance` from [here](#step-1-create-a-cache))
+```javascript
+InformationBundler.prepareTemplates({
+    cache: cache,
+    templates: [PurchaseDetailsGroupedByCustomer, OtherTemplate],  // or just Template3 if there is only one
+    bundleNames: ["customers", "items", "purchases"]
+});
+```
+ - Feel the cleanliness of your code
+ - To find out which subscriptions (as array of object in the form of `{name: ..., subscriptionArgs: ..., options: ...}`) are used with a list of bundles, call `InformationBundler.subscriptionsUsed(arrayOfBundleNames)`
+ - To find out which helpers (as object where they keys are helper names and the values helpers) are used with a list of bundles, call `InformationBundler.helpersUsed(arrayOfBundleNames)`
 
 ### Template Helpers
 
@@ -321,7 +485,18 @@ And use it as follows:
   Content Here
 {{/WhenAllSubsReady}}
 ```
-
+Or better yet, ...
+```html
+<template name="WhenAllSubsReady">
+  {{#if allSubsReady}}
+    {{> Template.contentBlock}}
+  {{else}}
+    {{#if notReadyTemplate}}
+      {{> Template.dynamic template=notReadyTemplate}}
+    {{/if}}
+  {{/if}}
+</template>
+```
 
 ## Notes
 
