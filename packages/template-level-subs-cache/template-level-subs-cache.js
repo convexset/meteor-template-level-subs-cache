@@ -415,5 +415,31 @@ TemplateLevelSubsCache = (function() {
 		}
 	});
 
+	/////////////////////////////////////////////////////////////////////////////
+	// ReactiveParamGetter
+	/////////////////////////////////////////////////////////////////////////////
+	var ReactiveParamGetter = {};
+	PackageUtilities.addMutablePropertyObject(tlsc, 'ReactiveParamGetter', ReactiveParamGetter);
+
+	PackageUtilities.addImmutablePropertyFunction(ReactiveParamGetter, 'fromArrayToArray', function makeReactiveParamGetter_fromArrayToArray(arrParamNames, ReactiveParamGetter) {
+		var _params = PackageUtilities.shallowCopy(arrParamNames);
+		return () => _params.map(k => ReactiveParamGetter(k));
+	});
+
+	PackageUtilities.addImmutablePropertyFunction(ReactiveParamGetter, 'fromArrayToObj', function makeReactiveParamGetter_fromArrayToObj(arrParamNames, ReactiveParamGetter) {
+		var _params = PackageUtilities.shallowCopy(arrParamNames);
+		return () => _.object(_params.map(k => [k, ReactiveParamGetter(k)]));
+	});
+
+	PackageUtilities.addImmutablePropertyFunction(ReactiveParamGetter, 'fromObjToObj', function makeReactiveParamGetter_fromObjToObj(objParamNames, ReactiveParamGetter) {
+		var _params = PackageUtilities.shallowCopy(objParamNames);
+		return () => _.object(_.map(_params, (p, k) => [k, ReactiveParamGetter(p)]));
+	});
+
+	PackageUtilities.addImmutablePropertyFunction(ReactiveParamGetter, 'fromName', function makeReactiveParamGetter_fromName(paramName, ReactiveParamGetter) {
+		return () => ReactiveParamGetter(paramName);
+	});
+	/////////////////////////////////////////////////////////////////////////////
+
 	return tlsc;
 })();
