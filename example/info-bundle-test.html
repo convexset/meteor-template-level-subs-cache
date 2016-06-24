@@ -1,0 +1,81 @@
+<template name="InfoBundleTest">
+	<h1>Information Bundle Test</h1>
+
+	<button id="start-test">Start</button>
+
+	{{#if doTest}}
+		{{> InfoBundleTest_Customers}}
+		<hr>
+		{{> InfoBundleTest_Purchases}}
+		<hr>
+		{{> InfoBundleTest_CustomersPurchases}}
+	{{/if}}
+</template>
+
+<template name="WhenSubsReady">
+  {{#if allSubsReady}}
+    {{> Template.contentBlock}}
+  {{else}}
+    {{> spinner}}
+  {{/if}}
+</template>
+
+<template name="InfoBundleTest_Customers">
+	{{#WhenSubsReady}}
+		<h3>Customers</h3>
+		<table border=1>
+			<tr>
+				<th>_id</th>
+				<th>fullname</th>
+			</tr>
+			{{#each allCustomers}}
+				<tr>
+					<td>{{_id}}</td>
+					<td>{{fullname}}</td>
+				</tr>
+			{{/each}}
+		</table>
+	{{/WhenSubsReady}}
+</template>
+
+
+<template name="InfoBundleTest_Purchases">
+	{{#WhenSubsReady}}
+		<h3>Purchases</h3>
+		<table border=1>
+			<tr>
+				<th>customerId</th>
+				<th>item</th>
+				<th>count</th>
+			</tr>
+			{{#each allPurchases}}
+				<tr>
+					<td>{{customerId}}</td>
+					<td>{{item}}</td>
+					<td>{{count}}</td>
+				</tr>
+			{{/each}}
+		</table>
+	{{/WhenSubsReady}}
+</template>
+
+
+<template name="InfoBundleTest_CustomersPurchases">
+	{{#WhenSubsReady}}
+		<h3>Customers + Purchases</h3>
+		<table border=1>
+			<tr>
+				<th>customer name</th>
+				<th>item</th>
+				<th>count</th>
+			</tr>
+			{{#each customerPurchasesJoin}}
+				<tr>
+					<td>{{customer.fullname}}</td>
+					<td>{{item}}</td>
+					<td>{{count}}</td>
+				</tr>
+			{{/each}}
+		</table>
+	{{/WhenSubsReady}}
+</template>

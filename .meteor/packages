@@ -20,5 +20,4 @@ insecure                # Allow all DB writes from clients (for prototyping)
 reactive-var
 anti:fake
 convexset:template-level-subs-cache
-standard-minifier-css
-standard-minifier-js
+sacha:spin
