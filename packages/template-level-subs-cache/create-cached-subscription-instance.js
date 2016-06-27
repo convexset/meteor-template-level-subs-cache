@@ -75,7 +75,7 @@ createCachedSubscriptionInstance = function createCachedSubscriptionInstance(tem
 				}
 				var isFirstRun = c.firstRun;
 
-				// Begin "start-sub routine"
+				// start subscription routine				
 				if (TemplateLevelSubsCache.DEBUG_MODE) {
 					console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": " + (isFirstRun ? "Starting" : "Restarting") + "...", EJSON.stringify(_subscriptionArgs), `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
 				}
@@ -98,138 +98,128 @@ createCachedSubscriptionInstance = function createCachedSubscriptionInstance(tem
 					console.log(`[Cached Subscription]{${new Date()}} ${id} assigned sub-index ${newIdx} (${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
 				}
 
-				var sub;
-				if (typeof tlscOptions.expireAfter === "number") {
-					sub = subsCache.subscribeFor.apply(subsCache, [tlscOptions.expireAfter].concat(_subscriptionArgs));
-				} else {
-					sub = subsCache.subscribe.apply(subsCache, _subscriptionArgs);
-				}
-
 				templateInstance.cachedSubscription.__cachedSubscriptionsAllReady.set(newIdx);
 				templateInstance.cachedSubscription.__cachedSubscriptionReady[newIdx] = new ReactiveVar(false);
 
+				var sub;
 				var csRecord = {
-					sub: sub,
+					sub: null,
 					computation: c,
 					args: _subscriptionArgs,
 					idx: newIdx,
 					readyComputation: null,
 				};
 				templateInstance.cachedSubscription.__cachedSubscription[newIdx] = csRecord;
-				setTimeout(function subReadyRoutine() {
-					csRecord.readyComputation = templateInstance.autorun(function(c_r) {
-						if (sub.ready()) {
-							templateInstance.cachedSubscription.__cachedSubscriptionReady[newIdx].set(true);
-							if (_.isFunction(subOptions.onReady)) {
-								Tracker.nonreactive(function() {
-									subOptions.onReady(templateInstance, id, _subscriptionArgs);
-								});
-							}
-							if (TemplateLevelSubsCache.DEBUG_MODE) {
-								console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": on ready", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
-							}
-							c_r.stop();
-						}
-					});
-				}, 0);
 
-				// After Start
-				if (_.isFunction(subOptions.afterStart)) {
-					Tracker.nonreactive(function() {
-						subOptions.afterStart(templateInstance, id, _subscriptionArgs);
-					});
-				}
-				if (TemplateLevelSubsCache.DEBUG_MODE) {
-					console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": after start", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
-				}
+				csRecord.startSubPromise = new Promise(function(resolve) {
+					setTimeout(function doActualSubscription() {
+						/* 
+						 * some stuff might be happening in ccorcos:subs-cache
+						 * in stop and it has to be resolved before starting,
+						 * but we can't do it within a autorun block. Hence, the
+						 * setTimeout. And to guard against stopping a sub that
+						 * has not yet started, we put things in a promise and
+						 * chain stopSub to the resolution of this promise
+						 */
+						Tracker.flush();
+
+						if (typeof tlscOptions.expireAfter === "number") {
+							sub = subsCache.subscribeFor.apply(subsCache, [tlscOptions.expireAfter].concat(_subscriptionArgs));
+						} else {
+							sub = subsCache.subscribe.apply(subsCache, _subscriptionArgs);
+						}
+						csRecord.sub = sub;
+						csRecord.readyComputation = templateInstance.autorun(function(c_r) {
+							if (sub.ready()) {
+								templateInstance.cachedSubscription.__cachedSubscriptionReady[newIdx].set(true);
+								if (_.isFunction(subOptions.onReady)) {
+									Tracker.nonreactive(function() {
+										subOptions.onReady(templateInstance, id, _subscriptionArgs);
+									});
+								}
+								if (TemplateLevelSubsCache.DEBUG_MODE) {
+									console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": on ready", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
+								}
+								c_r.stop();
+							}
+						});
+
+						// After Start
+						if (_.isFunction(subOptions.afterStart)) {
+							Tracker.nonreactive(function() {
+								subOptions.afterStart(templateInstance, id, _subscriptionArgs);
+							});
+						}
+						if (TemplateLevelSubsCache.DEBUG_MODE) {
+							console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": after start", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
+						}
+
+						resolve(true);
+					}, 0);
+				});
 
 			});
 		},
 		stopSub: function stopSub(id, stopOverallComputation = true) {
-			var subAndComp = templateInstance.cachedSubscription.getSubInfo(id);
-			var subOptions = templateInstance.cachedSubscription.__options[id];
-			if (!subAndComp) {
-				throw new Meteor.Error('no-started-sub-with-id', id);
-			} else {
-				if (TemplateLevelSubsCache.DEBUG_MODE) {
-					console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": Stopping...", EJSON.stringify(subAndComp.args), `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
-				}
+			return new Promise(function stopSubPromise(resolve) {
+				var subAndComp = templateInstance.cachedSubscription.getSubInfo(id);
+				var subOptions = templateInstance.cachedSubscription.__options[id];
+				if (!subAndComp) {
+					throw new Meteor.Error('no-started-sub-with-id', id);
+				} else {
+					// ensure that start-sub work completes before stopping it
+					subAndComp.startSubPromise.then(function stopSubAfterStartCompletes() {
+						if (TemplateLevelSubsCache.DEBUG_MODE) {
+							console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": Stopping...", EJSON.stringify(subAndComp.args), `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
+						}
 
-				// Before Stop
-				if (_.isFunction(subOptions.beforeStop)) {
-					Tracker.nonreactive(function() {
-						subOptions.beforeStop(templateInstance, id, subAndComp.args);
+						// Before Stop
+						if (_.isFunction(subOptions.beforeStop)) {
+							Tracker.nonreactive(function() {
+								subOptions.beforeStop(templateInstance, id, subAndComp.args);
+							});
+						}
+						if (TemplateLevelSubsCache.DEBUG_MODE) {
+							console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": before stop", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
+						}
+
+						// Stop everything
+						subAndComp.sub.stop();
+						if (stopOverallComputation && !!subAndComp.computation && !subAndComp.computation.stopped) {
+							subAndComp.computation.stop();
+						}
+						if (!!subAndComp.readyComputation) {
+							subAndComp.readyComputation.stop();
+						} else {
+							console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": Missing ready computation. (Args: " + EJSON.stringify(subAndComp.args) + ")", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
+						}
+						templateInstance.cachedSubscription.__cachedSubscriptionStarted[id] = false;
+
+						// After Stop
+						if (_.isFunction(subOptions.afterStop)) {
+							Tracker.nonreactive(function() {
+								subOptions.afterStop(templateInstance, id, subAndComp.args);
+							});
+						}
+						if (TemplateLevelSubsCache.DEBUG_MODE) {
+							console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": after stop", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
+						}
+
+						resolve(true);
 					});
 				}
-				if (TemplateLevelSubsCache.DEBUG_MODE) {
-					console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": before stop", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
-				}
-
-				Tracker.autorun(function(c) {
-					if (subAndComp.sub.ready()) {
-						subAndComp.sub.stop();
-						if (stopOverallComputation && !!subAndComp.computation && !subAndComp.computation.stopped) {
-							subAndComp.computation.stop();
-						}
-						if (!!subAndComp.readyComputation) {
-							subAndComp.readyComputation.stop();
-						} else {
-							console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": Missing ready computation. (Args: " + EJSON.stringify(subAndComp.args) + ")", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
-						}
-						templateInstance.cachedSubscription.__cachedSubscriptionStarted[id] = false;
-
-						// After Stop
-						if (_.isFunction(subOptions.afterStop)) {
-							Tracker.nonreactive(function() {
-								subOptions.afterStop(templateInstance, id, subAndComp.args);
-							});
-						}
-						if (TemplateLevelSubsCache.DEBUG_MODE) {
-							console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": after stop", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
-						}
-						subAndComp.sub.stop();
-						if (stopOverallComputation && !!subAndComp.computation && !subAndComp.computation.stopped) {
-							subAndComp.computation.stop();
-						}
-						if (!!subAndComp.readyComputation) {
-							subAndComp.readyComputation.stop();
-						} else {
-							console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": Missing ready computation. (Args: " + EJSON.stringify(subAndComp.args) + ")", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
-						}
-						templateInstance.cachedSubscription.__cachedSubscriptionStarted[id] = false;
-
-						// After Stop
-						if (_.isFunction(subOptions.afterStop)) {
-							Tracker.nonreactive(function() {
-								subOptions.afterStop(templateInstance, id, subAndComp.args);
-							});
-						}
-						if (TemplateLevelSubsCache.DEBUG_MODE) {
-							console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": after stop", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
-						}
-
-						c.stop();
-					} else {
-						Meteor.setTimeout(function stopComputationAfterTimeoutIfNotStopped() {
-							if (!c.stopped) {
-								if (TemplateLevelSubsCache.DEBUG_MODE) {
-									console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": force stopping computation; sub was never ready", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
-								}
-								c.stop();
-							}
-						}, 1000 * 60 * 10);  // 10 min
-					}
-				});
-			}
+			});
 		},
 		restartSub: function restartSub(id) {
 			if (TemplateLevelSubsCache.DEBUG_MODE) {
 				console.log("[Cached Subscription]{" + (new Date()) + "} Calling restartSub(" + id + ")...", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
 			}
-			templateInstance.cachedSubscription.stopSub(id);
-			setTimeout(function initiateStartSub() {
-				templateInstance.cachedSubscription.startSub(id);
-			}, 0);
+			templateInstance.cachedSubscription
+				.stopSub(id)
+				.then(function() {
+					Tracker.flush(); // let things unravel first (we have time...)
+					templateInstance.cachedSubscription.startSub(id);
+				});
 		},
 		cachedSubReady: function cachedSubReady(id) {
 			var idx = templateInstance.cachedSubscription.__cachedSubscriptionId.get(id);

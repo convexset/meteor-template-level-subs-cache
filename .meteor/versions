@@ -14,7 +14,7 @@ caching-html-compiler@1.0.6
 callback-hook@1.0.9
 check@1.2.3
 coffeescript@1.1.2
-convexset:template-level-subs-cache@0.1.6
+convexset:template-level-subs-cache@0.1.6_1
 dburles:mongo-collection-instances@0.3.5
 ddp@1.2.5
 ddp-client@1.2.8
