@@ -27,6 +27,7 @@ Package.onUse(function(api) {
 	);
 
 	// client only
+	api.addFiles('create-cached-subscription-instance.js', 'client');
 	api.addFiles('template-level-subs-cache.js', 'client');
 	api.addFiles('block-helpers.html', 'client');
 	api.export('TemplateLevelSubsCache', 'client');
