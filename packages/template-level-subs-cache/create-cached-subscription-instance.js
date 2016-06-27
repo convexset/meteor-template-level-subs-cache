@@ -74,74 +74,75 @@ createCachedSubscriptionInstance = function createCachedSubscriptionInstance(tem
 					}
 				}
 				var isFirstRun = c.firstRun;
-				setTimeout(function startSubscriptionRoutine() {
-					if (TemplateLevelSubsCache.DEBUG_MODE) {
-						console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": " + (isFirstRun ? "Starting" : "Restarting") + "...", EJSON.stringify(_subscriptionArgs), `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
-					}
 
-					// Before Start
-					if (_.isFunction(subOptions.beforeStart)) {
-						Tracker.nonreactive(function() {
-							subOptions.beforeStart(templateInstance, id, _subscriptionArgs);
-						});
-					}
-					if (TemplateLevelSubsCache.DEBUG_MODE) {
-						console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": before start", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
-					}
+				// Begin "start-sub routine"
+				if (TemplateLevelSubsCache.DEBUG_MODE) {
+					console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": " + (isFirstRun ? "Starting" : "Restarting") + "...", EJSON.stringify(_subscriptionArgs), `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
+				}
 
-					templateInstance.cachedSubscription.__cachedSubscriptionIdx += 1;
+				// Before Start
+				if (_.isFunction(subOptions.beforeStart)) {
+					Tracker.nonreactive(function() {
+						subOptions.beforeStart(templateInstance, id, _subscriptionArgs);
+					});
+				}
+				if (TemplateLevelSubsCache.DEBUG_MODE) {
+					console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": before start", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
+				}
 
-					var newIdx = templateInstance.cachedSubscription.__cachedSubscriptionIdx;
-					templateInstance.cachedSubscription.__cachedSubscriptionId.set(id, newIdx);
-					if (TemplateLevelSubsCache.DEBUG_MODE) {
-						console.log(`[Cached Subscription]{${new Date()}} ${id} assigned sub-index ${newIdx} (${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
-					}
+				templateInstance.cachedSubscription.__cachedSubscriptionIdx += 1;
 
-					var sub;
-					if (typeof tlscOptions.expireAfter === "number") {
-						sub = subsCache.subscribeFor.apply(subsCache, [tlscOptions.expireAfter].concat(_subscriptionArgs));
-					} else {
-						sub = subsCache.subscribe.apply(subsCache, _subscriptionArgs);
-					}
+				var newIdx = templateInstance.cachedSubscription.__cachedSubscriptionIdx;
+				templateInstance.cachedSubscription.__cachedSubscriptionId.set(id, newIdx);
+				if (TemplateLevelSubsCache.DEBUG_MODE) {
+					console.log(`[Cached Subscription]{${new Date()}} ${id} assigned sub-index ${newIdx} (${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
+				}
 
-					templateInstance.cachedSubscription.__cachedSubscriptionsAllReady.set(newIdx);
-					templateInstance.cachedSubscription.__cachedSubscriptionReady[newIdx] = new ReactiveVar(false);
+				var sub;
+				if (typeof tlscOptions.expireAfter === "number") {
+					sub = subsCache.subscribeFor.apply(subsCache, [tlscOptions.expireAfter].concat(_subscriptionArgs));
+				} else {
+					sub = subsCache.subscribe.apply(subsCache, _subscriptionArgs);
+				}
 
-					var csRecord = {
-						sub: sub,
-						computation: c,
-						args: _subscriptionArgs,
-						idx: newIdx,
-						readyComputation: null,
-					};
-					templateInstance.cachedSubscription.__cachedSubscription[newIdx] = csRecord;
-					setTimeout(function subReadyRoutine() {
-						csRecord.readyComputation = templateInstance.autorun(function(c_r) {
-							if (sub.ready()) {
-								templateInstance.cachedSubscription.__cachedSubscriptionReady[newIdx].set(true);
-								if (_.isFunction(subOptions.onReady)) {
-									Tracker.nonreactive(function() {
-										subOptions.onReady(templateInstance, id, _subscriptionArgs);
-									});
-								}
-								if (TemplateLevelSubsCache.DEBUG_MODE) {
-									console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": on ready", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
-								}
-								c_r.stop();
+				templateInstance.cachedSubscription.__cachedSubscriptionsAllReady.set(newIdx);
+				templateInstance.cachedSubscription.__cachedSubscriptionReady[newIdx] = new ReactiveVar(false);
+
+				var csRecord = {
+					sub: sub,
+					computation: c,
+					args: _subscriptionArgs,
+					idx: newIdx,
+					readyComputation: null,
+				};
+				templateInstance.cachedSubscription.__cachedSubscription[newIdx] = csRecord;
+				setTimeout(function subReadyRoutine() {
+					csRecord.readyComputation = templateInstance.autorun(function(c_r) {
+						if (sub.ready()) {
+							templateInstance.cachedSubscription.__cachedSubscriptionReady[newIdx].set(true);
+							if (_.isFunction(subOptions.onReady)) {
+								Tracker.nonreactive(function() {
+									subOptions.onReady(templateInstance, id, _subscriptionArgs);
+								});
 							}
-						});
-					}, 0);
-
-					// After Start
-					if (_.isFunction(subOptions.afterStart)) {
-						Tracker.nonreactive(function() {
-							subOptions.afterStart(templateInstance, id, _subscriptionArgs);
-						});
-					}
-					if (TemplateLevelSubsCache.DEBUG_MODE) {
-						console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": after start", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
-					}
+							if (TemplateLevelSubsCache.DEBUG_MODE) {
+								console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": on ready", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
+							}
+							c_r.stop();
+						}
+					});
 				}, 0);
+
+				// After Start
+				if (_.isFunction(subOptions.afterStart)) {
+					Tracker.nonreactive(function() {
+						subOptions.afterStart(templateInstance, id, _subscriptionArgs);
+					});
+				}
+				if (TemplateLevelSubsCache.DEBUG_MODE) {
+					console.log("[Cached Subscription]{" + (new Date()) + "} " + id + ": after start", `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
+				}
+
 			});
 		},
 		stopSub: function stopSub(id, stopOverallComputation = true) {
