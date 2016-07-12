@@ -137,6 +137,22 @@ TemplateLevelSubsCache = (function() {
 
 	PackageUtilities.addImmutablePropertyValue(tlsc, "DEFAULT_CACHE", tlsc.makeCache());
 
+	function areAllSubsReadyCheck(instance) {
+		var isReady;
+		if (!!instance.cachedSubscription) {
+			isReady = instance.cachedSubscription.allSubsReady();
+		} else {
+			var templateLevelSubsReady = instance.subscriptionsReady();
+			var defaultSubsReady = DefaultSubscriptions.allReady();
+			isReady = templateLevelSubsReady && defaultSubsReady;
+		}
+		return isReady;
+	}
+
+	Template.registerHelper('allSubsReady', function allSubsReady() {
+		return areAllSubsReadyCheck(Template.instance());
+	});
+
 	var Decorators = {};
 	PackageUtilities.addMutablePropertyObject(tlsc, 'Decorators', Decorators);
 	PackageUtilities.addImmutablePropertyFunction(Decorators, 'whenAllSubsReady', function whenAllSubsReady(
@@ -149,14 +165,7 @@ TemplateLevelSubsCache = (function() {
 			instance.autorun(function(c) {
 				before.call(instance, c);
 
-				var isReady;
-				if (!!instance.cachedSubscription) {
-					isReady = instance.cachedSubscription.allSubsReady();
-				} else {
-					var templateLevelSubsReady = instance.subscriptionsReady();
-					var defaultSubsReady = DefaultSubscriptions.allReady();
-					isReady = templateLevelSubsReady && defaultSubsReady;
-				}
+				var isReady = areAllSubsReadyCheck(instance);
 
 				if (isReady) {
 					body.call(instance, c);
@@ -165,16 +174,6 @@ TemplateLevelSubsCache = (function() {
 				after.call(instance, c);
 			});
 		};
-	});
-
-	Template.registerHelper('allSubsReady', function allSubsReady() {
-		if (!!Template.instance().cachedSubscription) {
-			return Template.instance().cachedSubscription.allSubsReady();
-		} else {
-			var templateLevelSubsReady = Template.instance().subscriptionsReady();
-			var defaultSubsReady = DefaultSubscriptions.allReady();
-			return templateLevelSubsReady && defaultSubsReady;
-		}
 	});
 
 	/////////////////////////////////////////////////////////////////////////////
