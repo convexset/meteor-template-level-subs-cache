@@ -142,7 +142,7 @@ TLSC.prepareCachedSubscription(
 );
 ```
 
-... actually, that last parameter should be reactive, which leads us to the next section.
+... actually, that last parameter should, instead of being a function without a a reactive dependency, be a function with a reactive dependency. Something on the template instance might change `numArticlesPerPage` (the number of articles to display per page?) that necessitates a change in the subscription's parameters. This leads us to the next section.
 
 #### Reactive Arguments
 
