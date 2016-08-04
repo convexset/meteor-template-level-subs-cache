@@ -53,7 +53,7 @@ InformationBundler = (function() {
 		}
 
 		_.forEach(helpers, function(h, helperName) {
-			if (!!globalHelperPool[helperName]) {
+			if (!!globalHelperPool[helperName] && (globalHelperPool[helperName] !== h)) {
 				console.warn(`Helper with name ${helperName} already exists. Using helper from ${bundleName} to overwrite existing...`);
 			}
 			globalHelperPool[helperName] = h;
