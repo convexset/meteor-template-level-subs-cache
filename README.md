@@ -401,7 +401,9 @@ Template Helpers:
 ```javascript
 _EnsureIndexes.addIndex(UserRecord.collection._name, [
     ['userId', 1],
-]);
+], {
+    unique : true
+});
 
 _EnsureIndexes.addIndex(SpecialRecord.collection._name, [
     ['localeId', 1],
