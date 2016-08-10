@@ -12,15 +12,16 @@ const _ = require('underscore');
 
 var Future = Npm.require('fibers/future');
 Mongo.Collection.prototype.getIndexes = function() {
+	var collection = this;
 	var raw = this.rawCollection();
 	var future = new Future();
 
 	raw.indexes(function(err, indexes) {
 		if (err) {
 			future.throw(err);
+		} else {
+			future.return(indexes);
 		}
-
-		future.return(indexes);
 	});
 
 	return future.wait();
@@ -66,7 +67,14 @@ _EnsureIndexes = (function() {
 					['_id', 1]
 				]
 			])).map(x => JSON.stringify(_.object(x)));
-			var _allCurrentIndexes = Mongo.Collection.get(collectionName).getIndexes();
+			var _allCurrentIndexes;
+			try {
+				// this can fail when there is no such collection
+				_allCurrentIndexes = Mongo.Collection.get(collectionName).getIndexes();
+			} catch (e) {
+				console.error(`Error getting indexes in collection: ${collectionName}:`, e);
+				return;
+			}
 			var allCurrentIndexes = _allCurrentIndexes.map(x => JSON.stringify(x.key));
 			var allCurrentIndexesDict = _.object(_allCurrentIndexes.map(x => [JSON.stringify(x.key), {
 				name: x.name,
