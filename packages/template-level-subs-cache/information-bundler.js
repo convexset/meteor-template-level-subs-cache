@@ -1,3 +1,4 @@
+/* global Meteor: true */
 /* global InformationBundler: true */
 /* global TemplateLevelSubsCache: true */
 
@@ -10,7 +11,7 @@ const PackageUtilities = require('package-utils');
 const _ = require('underscore');
 
 function countKeys(o) {
-	return _.reduce(o, acc => acc + 1, 0)
+	return _.reduce(o, acc => acc + 1, 0);
 }
 
 InformationBundler = (function() {
@@ -65,7 +66,7 @@ InformationBundler = (function() {
 			if (!infoBundles[name]) {
 				throw new Meteor.Error("undeclared-info-bundle-name", `Undeclared information bundle name: ${name}`);
 			}
-		});			
+		});
 	}
 
 	PackageUtilities.addImmutablePropertyFunction(_ib, "addSupplementaryInformationBundle", function addSupplementaryInformationBundle({
