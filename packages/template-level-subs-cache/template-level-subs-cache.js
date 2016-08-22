@@ -24,6 +24,19 @@ TemplateLevelSubsCache = (function() {
 		},
 	});
 
+	// Logger
+	var _logger = function defaultInfoLogger() {
+		console.info.apply(console, _.toArray(arguments));
+	};
+	PackageUtilities.addPropertyGetterAndSetter(tlsc, "LOG", {
+		get: () => _logger,
+		set: (fn) => {
+			if (_.isFunction(fn)) {
+				_logger = fn;
+			}
+		},
+	});
+
 	PackageUtilities.addImmutablePropertyFunction(tlsc, "makeCache", function makeCache(options = {}) {
 		// See: https://atmospherejs.com/ccorcos/subs-cache
 		options = _.extend({
@@ -54,6 +67,7 @@ TemplateLevelSubsCache = (function() {
 				onReady: null,
 				beforeStop: null,
 				afterStop: null,
+				argValidityPredicate: () => true,
 			}, options);
 
 			templates.forEach(function(template) {
@@ -87,26 +101,26 @@ TemplateLevelSubsCache = (function() {
 					template.onCreated(function TemplateLevelSubsCache_onCreated() {
 						var instance = this;
 						if (_debugMode) {
-							console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onCreated for " + subId);
+							tlsc.LOG("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onCreated for " + subId);
 						}
 						if (instance.cachedSubscription.__allowStartSubCall[subId]) {
 							instance.cachedSubscription.startSub(subId);
 							instance.cachedSubscription.__startSubCalled[subId] = true;
 						} else {
-							console.warn("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onCreated for " + subId + '[PREVENTED!]');
+							tlsc.LOG("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onCreated for " + subId + '[PREVENTED!]');
 						}
 					});
 				} else {
 					template.onRendered(function TemplateLevelSubsCache_onRendered() {
 						var instance = this;
 						if (_debugMode) {
-							console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onRendered for " + subId);
+							tlsc.LOG("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onRendered for " + subId);
 						}
 						if (instance.cachedSubscription.__allowStartSubCall[subId]) {
 							instance.cachedSubscription.startSub(subId);
 							instance.cachedSubscription.__startSubCalled[subId] = true;
 						} else {
-							console.warn("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onRendered for " + subId + '[PREVENTED!]');
+							tlsc.LOG("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onRendered for " + subId + '[PREVENTED!]');
 						}
 					});
 				}
@@ -115,12 +129,12 @@ TemplateLevelSubsCache = (function() {
 					var instance = this;
 					instance.cachedSubscription.__allowStartSubCall[subId] = false;
 					if (_debugMode) {
-						console.log("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onDestroyed for " + subId);
+						tlsc.LOG("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onDestroyed for " + subId);
 					}
 					if (instance.cachedSubscription.__startSubCalled[subId]) {
 						instance.cachedSubscription.stopSub(subId);
 					} else {
-						console.warn("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onDestroyed for " + subId + " (Sub was never started.)");
+						tlsc.LOG("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onDestroyed for " + subId + " (Sub was never started.)");
 					}
 				});
 

@@ -27,6 +27,19 @@ InformationBundler = (function() {
 		},
 	});
 
+	// Logger
+	var _logger = function defaultInfoLogger() {
+		console.info.apply(console, _.toArray(arguments));
+	};
+	PackageUtilities.addPropertyGetterAndSetter(_ib, "LOG", {
+		get: () => _logger,
+		set: (fn) => {
+			if (_.isFunction(fn)) {
+				_logger = fn;
+			}
+		},
+	});
+
 	/////////////////////////////////////////////////////////////////////////////
 	// Information Bundles
 	/////////////////////////////////////////////////////////////////////////////
@@ -41,12 +54,12 @@ InformationBundler = (function() {
 		}
 
 		if (_debugMode) {
-			console.log(`[TLSC|InformationBundler|addBasicInformationBundle] Adding bundle ${bundleName} with ${countKeys(helpers)} helpers.`);
+			_ib.LOG(`[TLSC|InformationBundler|addBasicInformationBundle] Adding bundle ${bundleName} with ${countKeys(helpers)} helpers.`);
 		}
 
 		if (!!infoBundles[bundleName]) {
 			if (!knownExtension) {
-				console.warn(`Information bundle ${bundleName} already exists. Augmenting (and overwriting) existing where necessary...`);
+				_ib.LOG(`Information bundle ${bundleName} already exists. Augmenting (and overwriting) existing where necessary...`);
 			}
 			_.extend(infoBundles[bundleName], helpers);
 		} else {
@@ -55,7 +68,7 @@ InformationBundler = (function() {
 
 		_.forEach(helpers, function(h, helperName) {
 			if (!!globalHelperPool[helperName] && (globalHelperPool[helperName] !== h)) {
-				console.warn(`Helper with name ${helperName} already exists. Using helper from ${bundleName} to overwrite existing...`);
+				_ib.LOG(`Helper with name ${helperName} already exists. Using helper from ${bundleName} to overwrite existing...`);
 			}
 			globalHelperPool[helperName] = h;
 		});
@@ -81,7 +94,7 @@ InformationBundler = (function() {
 		checkBundleNames(bundleNames);
 
 		if (_debugMode) {
-			console.log(`[TLSC|InformationBundler|addSupplementaryInformationBundle] Adding supplementary bundle [${bundleNames}] with ${countKeys(helpers)} helpers.`);
+			_ib.LOG(`[TLSC|InformationBundler|addSupplementaryInformationBundle] Adding supplementary bundle [${bundleNames}] with ${countKeys(helpers)} helpers.`);
 		}
 
 		suppBundles.push({
@@ -91,7 +104,7 @@ InformationBundler = (function() {
 
 		_.forEach(helpers, function(h, helperName) {
 			if (!!globalHelperPool[helperName]) {
-				console.warn(`Helper with name ${helperName} already exists. Using helper from [${bundleNames}] to overwrite existing...`);
+				_ib.LOG(`Helper with name ${helperName} already exists. Using helper from [${bundleNames}] to overwrite existing...`);
 			}
 			globalHelperPool[helperName] = h;
 		});
@@ -141,7 +154,7 @@ InformationBundler = (function() {
 			}
 
 			if (_debugMode) {
-				console.log(`[TLSC|InformationBundler|associateSubscription] Associating sub with name ${subName} with bundle ${bundleName}...`);
+				_ib.LOG(`[TLSC|InformationBundler|associateSubscription] Associating sub with name ${subName} with bundle ${bundleName}...`);
 			}
 
 			subAssociations[bundleName].push({
@@ -160,7 +173,7 @@ InformationBundler = (function() {
 					subAssociations[bname].forEach(function(item) {
 						if (_debugMode) {
 							var isProbablyReactive = item.subscriptionArgs.filter(x => _.isFunction(x)).length > 0;
-							console.log(`[TLSC|InformationBundler] ${bname} (of [${bundleNames}]) uses subscription ${item.name}${isProbablyReactive ? " (probably reactive)": ""}`);
+							_ib.LOG(`[TLSC|InformationBundler] ${bname} (of [${bundleNames}]) uses subscription ${item.name}${isProbablyReactive ? " (probably reactive)": ""}`);
 						}
 						result.push(item);
 					});
@@ -176,7 +189,7 @@ InformationBundler = (function() {
 			bundleNames.forEach(function(bname) {
 				// add the "basic" information bundles
 				if (_debugMode) {
-					console.log(`[TLSC|InformationBundler] There are ${countKeys(infoBundles[bname])} helpers in ${bname} (basic bundle)`);
+					_ib.LOG(`[TLSC|InformationBundler] There are ${countKeys(infoBundles[bname])} helpers in ${bname} (basic bundle)`);
 				}
 				_.forEach(infoBundles[bname], function(helper, helperName) {
 					result[helperName] = helper;
@@ -187,7 +200,7 @@ InformationBundler = (function() {
 				// add helpers if bundleNames contains everything in suppBundle.bundleNames
 				if (arr1ContainsArr2(bundleNames, suppBundle.bundleNames)) {
 					if (_debugMode) {
-						console.log(`[TLSC|InformationBundler] There are ${countKeys(suppBundle.helpers)} helpers in supplementary bundle requiring [${suppBundle.bundleNames}]`);
+						_ib.LOG(`[TLSC|InformationBundler] There are ${countKeys(suppBundle.helpers)} helpers in supplementary bundle requiring [${suppBundle.bundleNames}]`);
 					}
 					_.forEach(suppBundle.helpers, function(helper, helperName) {
 						result[helperName] = helper;
@@ -196,7 +209,7 @@ InformationBundler = (function() {
 			});
 
 			if (_debugMode) {
-				console.log(`[TLSC|InformationBundler] ${countKeys(result)} helpers implied by [${bundleNames}]: ${_.map(result, (h,k) => k).join(", ")}`);
+				_ib.LOG(`[TLSC|InformationBundler] ${countKeys(result)} helpers implied by [${bundleNames}]: ${_.map(result, (h,k) => k).join(", ")}`);
 			}
 
 			return result;
@@ -214,7 +227,7 @@ InformationBundler = (function() {
 
 			templates.forEach(function(tmpl) {
 				if (_debugMode) {
-					console.log(`[TLSC|InformationBundler|prepareTemplates] Applying [${bundleNames}] to ${tmpl.viewName}`);
+					_ib.LOG(`[TLSC|InformationBundler|prepareTemplates] Applying [${bundleNames}] to ${tmpl.viewName}`);
 				}
 
 				// prepare templates with all relevant subs
@@ -226,7 +239,7 @@ InformationBundler = (function() {
 						TemplateLevelSubsCache.DEBUG_MODE = true;
 					}
 					if (_debugMode) {
-						console.log(`[TLSC|InformationBundler|prepareTemplates] Adding subscription ${name} to ${tmpl.viewName}`);
+						_ib.LOG(`[TLSC|InformationBundler|prepareTemplates] Adding subscription ${name} to ${tmpl.viewName}`);
 					}
 					cache.prepareCachedSubscription(tmpl, name, subscriptionArgs, options);
 					TemplateLevelSubsCache.DEBUG_MODE = TLSC_debugMode;
@@ -235,7 +248,7 @@ InformationBundler = (function() {
 				// prepare templates with all relevant helpers
 				var allHelpers = _ib.helpersUsed(bundleNames);
 				if (_debugMode) {
-					console.log(`[TLSC|InformationBundler|prepareTemplates] Adding ${countKeys(allHelpers)} helpers to ${tmpl.viewName}`);
+					_ib.LOG(`[TLSC|InformationBundler|prepareTemplates] Adding ${countKeys(allHelpers)} helpers to ${tmpl.viewName}`);
 				}
 				tmpl.helpers(allHelpers);
 			});
