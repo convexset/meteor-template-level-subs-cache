@@ -67,6 +67,7 @@ TemplateLevelSubsCache = (function() {
 				onReady: null,
 				beforeStop: null,
 				afterStop: null,
+				replaceSubscriptionsReady: true,
 				argValidityPredicate: () => true,
 			}, options);
 
@@ -75,6 +76,10 @@ TemplateLevelSubsCache = (function() {
 					var instance = this;
 					if (typeof instance.cachedSubscription === "undefined") {
 						instance.cachedSubscription = createCachedSubscriptionInstance(instance, tlscInstance, subsCache);
+
+						if (options.replaceSubscriptionsReady) {
+							instance.subscriptionsReady = instance.cachedSubscription.allSubsReady;
+						}
 					}
 
 					// dealing with the strange case where the template gets destroyed
@@ -149,7 +154,11 @@ TemplateLevelSubsCache = (function() {
 		return tlscInstance;
 	});
 
-	PackageUtilities.addImmutablePropertyValue(tlsc, "DEFAULT_CACHE", tlsc.makeCache());
+	var _defaultCache = tlsc.makeCache();
+	PackageUtilities.addPropertyGetter(tlsc, "DEFAULT_CACHE", () => _defaultCache);
+	PackageUtilities.addImmutablePropertyFunction(tlsc, "replaceDefaultCache", function replaceDefaultCache(options) {
+		_defaultCache = tlsc.makeCache(options);
+	});
 
 	function areAllSubsReadyCheck(instance) {
 		var isReady;

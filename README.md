@@ -27,6 +27,7 @@ Additional tools are provided in the form of:
   - [The Information Bundler Enhancement](#the-information-bundler-enhancement)
     - [Why](#why)
     - [Using It](#using-it)
+    - [Setting the Default Cache](#setting-the-default-cache)
   - [Template Helpers](#template-helpers)
   - [Functionality on Template Instances](#functionality-on-template-instances)
 - [Debug Mode](#debug-mode)
@@ -187,6 +188,8 @@ For those with a touch of OCD, each subscription may be "prepared" in with more 
  - `onReady`: a callback function that is called after the subscription is ready
  - `beforeStop`: a callback function that is called before the subscription is stopped
  - `afterStop`: a callback function that is called after the subscription is stopped
+ - `replaceSubscriptionsReady`: whether to replace/shadow the [`subscriptionsReady`](https://docs.meteor.com/api/templates.html#Blaze-TemplateInstance-subscribe) function of `Blaze.TemplateInstance` with one that covers default publications, template-level subscriptions and template-level cached subscriptions (default: `true`)
+ - `argValidityPredicate`: when arguments are updated (to `newArgs`) the subscription will be re-started with the new arguments only if `argValidityPredicate(newArgs)` is `true` (default: `() => true`)
 
 Each of the above callbacks is called with the template instance and subscription id as arguments.
 
@@ -338,7 +341,8 @@ InformationBundler.addSupplementaryInformationBundle({
  - Automate the set-up for templates given the names of the required information bundles (given a `TemplateLevelSubsCache` instance `TLSCInstance` from [here](#step-1-create-a-cache))
 ```javascript
 InformationBundler.prepareTemplates({
-    cache: cache,
+    cache: cache,  // if the is left out, a "default cache is used"
+                   // i.e. a cache from creating one with no arguments
     templates: [PurchaseDetailsGroupedByCustomer, OtherTemplate],  // or just Template3 if there is only one
     bundleNames: ["customers", "items", "purchases"]
 });
@@ -346,6 +350,15 @@ InformationBundler.prepareTemplates({
  - Feel the cleanliness of your code
  - To find out which subscriptions (as array of object in the form of `{name: ..., subscriptionArgs: ..., options: ...}`) are used with a list of bundles, call `InformationBundler.subscriptionsUsed(arrayOfBundleNames)`
  - To find out which helpers (as object where they keys are helper names and the values helpers) are used with a list of bundles, call `InformationBundler.helpersUsed(arrayOfBundleNames)`
+
+#### Setting the Default Cache
+
+The default cache is accessible via `TemplateLevelSubsCache.DEFAULT_CACHE` and begins as a cache "made" "with no arguments" (see [this](#step-1-create-a-cache)) for details.
+
+It may be replaced by calling `TemplateLevelSubsCache.replaceDefaultCache(options)` with `options` being the relevant arguments for [creating a cache](#step-1-create-a-cache).
+
+It is perhaps ideal to set the default cache before `InformationBundler.prepareTemplates` is called and have all cached subscriptions use that single cache. Subsidiary caches can be created for special purposes if needed.
+
 
 ### Template Helpers
 

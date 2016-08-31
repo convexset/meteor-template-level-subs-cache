@@ -12,6 +12,8 @@ createCachedSubscriptionInstance = function createCachedSubscriptionInstance(tem
 	}
 	globalTemplateIndices[templateName] += 1;
 
+	const __original_subscriptionsReady = templateInstance.subscriptionsReady;
+
 	return {
 		__templateInstanceId: globalTemplateIndices[templateName],
 		__cachedSubscriptionIdx: 0,
@@ -269,7 +271,7 @@ createCachedSubscriptionInstance = function createCachedSubscriptionInstance(tem
 		},
 		allSubsReady: function allSubsReady() {
 			var allCachedSubsReady = templateInstance.cachedSubscription.allCachedSubsReady();
-			var templateLevelSubsReady = templateInstance.subscriptionsReady();
+			var templateLevelSubsReady = __original_subscriptionsReady.call(templateInstance);
 			var defaultSubsReady = DefaultSubscriptions.allReady();
 			// avoid short circuit evaluation to achieve proper reactivity
 			var isReady = allCachedSubsReady && templateLevelSubsReady && defaultSubsReady;
