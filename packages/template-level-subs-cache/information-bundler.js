@@ -28,7 +28,11 @@ if (Meteor.isClient) {
 			}
 			const helper = instance[INFORMATION_BUNDLER_NAMESPACE].helpersAvailable[helperName];
 			if (typeof helper !== 'undefined') {
-				return helper.apply(this, args);
+				if (_.isFunction(helper)) {
+					return helper.apply(this, args);
+				} else {
+					return helper;
+				}
 			} else {
 				throw new Meteor.Error('information-bundler-error--helper-not-available', helperName);
 			}

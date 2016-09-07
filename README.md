@@ -365,8 +365,14 @@ It is perhaps ideal to set the default cache before `InformationBundler.prepareT
 
 When templates subscribe to data, the data is available to the entire application. In particular, when a descendant template exists, one can infer that its parents exist and hence the data. So the helpers associated with that data should also be available.
 
-Noting that `Template.dynamic` makes static inference of parents difficult, and dynamic addition of helpers is bad practice, 
+Noting that `Template.dynamic` makes static inference of parents difficult, and dynamic addition of helpers is bad practice, the `_ib_` global helper is provided to check the local availability of helpers and invoke/return them as necessary.
 
+For example:
+```html
+Total purchase count: {{_ib_ 'getTotalPurchaseCount' customerId}}
+```
+
+But when an object is returned and one needs to use a member, problems arise because Spacebars does not support `{{(_ib_ 'getCustomerRankedByRevenue' 0).fullname}}`. Thankfully, there is a simpler (and cleaner) workaround:
 ```html
 {{#let customer=(_ib_ 'getCustomerRankedByRevenue' 0)}}
   <p>Top Customer: {{customer.fullname}}</p>
@@ -377,13 +383,13 @@ Noting that `Template.dynamic` makes static inference of parents difficult, and 
 ```
 
 But before the `_ib_` helper can be used on a template, it should be "touched" so that the initial preparation or use of those helpers is done.
-```
+```javascript
 InformationBundler.touch(Template.SomeTemplate);
 ```
 Note that for a template to have access to helpers in ancestor templates, it must be connected in an unbroken string of "touched" or "prepared" templates. (`touch` is actually a lite version of `InformationBundler.prepareTemplates` which also sets up a chain/tree of inheritance of bundles and the available helpers.)
 
 To avoid grief with `Template.dynamic`, remember to do the following:
-```
+```javascript
 InformationBundler.touch([
     Template.__dynamic,
     Template.__dynamicWithDataContext
