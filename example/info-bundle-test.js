@@ -36,14 +36,15 @@ if (Meteor.isServer) {
 InformationBundler.addBasicInformationBundle({
 	bundleName: "customers",
 	helpers: {
-		allCustomers: () => CustomerCollection.find()
+		allCustomers: () => CustomerCollection.find(),
+		getCustomerByIdx: (idx) => CustomerCollection.find().fetch()[idx]
 	}
 });
 
 InformationBundler.addBasicInformationBundle({
 	bundleName: "purchases",
 	helpers: {
-		allPurchases: () => PurchaseRecordCollection.find()
+		allPurchases: () => PurchaseRecordCollection.find(),
 	}
 });
 
@@ -108,12 +109,27 @@ if (Meteor.isClient) {
 	});
 
 	Template.InfoBundleTest_Customers.onCreated(function() {
-		console.info("[on-created] InfoBundleTest_Customers");
+		console.info("[on-created] InfoBundleTest_Customers", this);
 	});
 	Template.InfoBundleTest_Purchases.onCreated(function() {
-		console.info("[on-created] InfoBundleTest_Purchases");
+		console.info("[on-created] InfoBundleTest_Purchases", this);
 	});
 	Template.InfoBundleTest_CustomersPurchases.onCreated(function() {
-		console.info("[on-created] InfoBundleTest_CustomersPurchases");
+		console.info("[on-created] InfoBundleTest_CustomersPurchases", this);
 	});
+	Template.__dynamic.onCreated(function() {
+		console.info("[on-created] Template.dynamic", this);
+	});
+	Template.InfoBundleTest_CustomersPurchases_Child.onCreated(function() {
+		console.info("[on-created] InfoBundleTest_CustomersPurchases_Child", this);
+	});
+
+	// InformationBundler.prepareTemplates({
+	// 	templates: Template.InfoBundleTest_CustomersPurchases_Child,
+	// 	bundleNames: []
+	// });
+
+	InformationBundler.touch([Template.__dynamic, Template.__dynamicWithDataContext]);
+	InformationBundler.touch(Template.InfoBundleTest_CustomersPurchases_Child);
+
 }

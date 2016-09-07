@@ -28,6 +28,7 @@ Additional tools are provided in the form of:
     - [Why](#why)
     - [Using It](#using-it)
     - [Setting the Default Cache](#setting-the-default-cache)
+    - [Sharing Helpers with Children](#sharing-helpers-with-children)
   - [Template Helpers](#template-helpers)
   - [Functionality on Template Instances](#functionality-on-template-instances)
 - [Debug Mode](#debug-mode)
@@ -359,6 +360,35 @@ It may be replaced by calling `TemplateLevelSubsCache.replaceDefaultCache(option
 
 It is perhaps ideal to set the default cache before `InformationBundler.prepareTemplates` is called and have all cached subscriptions use that single cache. Subsidiary caches can be created for special purposes if needed.
 
+
+#### Sharing Helpers with Children
+
+When templates subscribe to data, the data is available to the entire application. In particular, when a descendant template exists, one can infer that its parents exist and hence the data. So the helpers associated with that data should also be available.
+
+Noting that `Template.dynamic` makes static inference of parents difficult, and dynamic addition of helpers is bad practice, 
+
+```html
+{{#let customer=(_ib_ 'getCustomerRankedByRevenue' 0)}}
+  <p>Top Customer: {{customer.fullname}}</p>
+{{/let}}
+{{#let customer=(_ib_ 'getCustomerRankedByRevenue' 1)}}
+  <p>Runner Up: {{customer.fullname}}</p>
+{{/let}}
+```
+
+But before the `_ib_` helper can be used on a template, it should be "touched" so that the initial preparation or use of those helpers is done.
+```
+InformationBundler.touch(Template.SomeTemplate);
+```
+Note that for a template to have access to helpers in ancestor templates, it must be connected in an unbroken string of "touched" or "prepared" templates. (`touch` is actually a lite version of `InformationBundler.prepareTemplates` which also sets up a chain/tree of inheritance of bundles and the available helpers.)
+
+To avoid grief with `Template.dynamic`, remember to do the following:
+```
+InformationBundler.touch([
+    Template.__dynamic,
+    Template.__dynamicWithDataContext
+]);
+```
 
 ### Template Helpers
 

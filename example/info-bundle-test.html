@@ -77,5 +77,24 @@
 				</tr>
 			{{/each}}
 		</table>
+
+		<!-- {{> InfoBundleTest_CustomersPurchases_Child}} -->
+		{{>Template.dynamic template='InfoBundleTest_CustomersPurchases_Child'}}
 	{{/WhenSubsReady}}
+</template>
+
+<template name="InfoBundleTest_CustomersPurchases_Child">
+	<div style="background-color: #eee;">
+		Using <code>&lbrace;&lbrace;_ib_ 'getCustomerByIdx' idx&rbrace;&rbrace;</code>:
+
+		{{#let customer=(_ib_ 'getCustomerByIdx' 0)}}
+			<p>Customer 0: {{customer.fullname}}</p>
+		{{/let}}
+		{{#let customer=(_ib_ 'getCustomerByIdx' 1)}}
+			<p>Customer 1: {{customer.fullname}}</p>
+		{{/let}}
+		{{#let customer=(_ib_ 'getCustomerByIdx' 2)}}
+			<p>Customer 2: {{customer.fullname}}</p>
+		{{/let}}
+	</div>
 </template>

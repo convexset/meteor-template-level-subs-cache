@@ -1,4 +1,7 @@
 /* global Meteor: true */
+/* global Template: true */
+/* global Spacebars: true */
+
 /* global InformationBundler: true */
 /* global TemplateLevelSubsCache: true */
 
@@ -12,6 +15,27 @@ const _ = require('underscore');
 
 function countKeys(o) {
 	return _.reduce(o, acc => acc + 1, 0);
+}
+
+const INFORMATION_BUNDLER_NAMESPACE = "[[[convexset:template-level-subs-cache/information-bundler]]]";
+
+if (Meteor.isClient) {
+	Template.registerHelper('_ib_', function(helperName, ...args) {
+		const instance = Template.instance();
+		if (instance[INFORMATION_BUNDLER_NAMESPACE]) {
+			while (args[args.length - 1] instanceof Spacebars.kw) {
+				args.pop();
+			}
+			const helper = instance[INFORMATION_BUNDLER_NAMESPACE].helpersAvailable[helperName];
+			if (typeof helper !== 'undefined') {
+				return helper.apply(this, args);
+			} else {
+				throw new Meteor.Error('information-bundler-error--helper-not-available', helperName);
+			}
+		} else {
+			throw new Meteor.Error('information-bundler-not-applied', instance.view.name);
+		}
+	});
 }
 
 InformationBundler = (function() {
@@ -230,6 +254,46 @@ InformationBundler = (function() {
 					_ib.LOG(`[TLSC|InformationBundler|prepareTemplates] Applying [${bundleNames}] to ${tmpl.viewName}`);
 				}
 
+				// register use of bundles
+				tmpl.onCreated(function bundleInheritance() {
+					if (_debugMode) {
+						_ib.LOG(`[TLSC|InformationBundler|bundleInheritance] For ${tmpl.viewName}`);
+					}
+					const instance = this;
+					if (!instance[INFORMATION_BUNDLER_NAMESPACE]) {
+						instance[INFORMATION_BUNDLER_NAMESPACE] = {};
+					}
+					if (!instance[INFORMATION_BUNDLER_NAMESPACE].bundlesAvailable) {
+						instance[INFORMATION_BUNDLER_NAMESPACE].bundlesAvailable = bundleNames.map(x => x);
+					}
+					const registeredBundlesAvailable = instance[INFORMATION_BUNDLER_NAMESPACE].bundlesAvailable;
+
+					const parentInfo = (instance.parent() || {})[INFORMATION_BUNDLER_NAMESPACE];
+					if (!!parentInfo) {
+						const parentBundles = parentInfo.bundlesAvailable;
+						if (_debugMode) {
+							_ib.LOG('[TLSC|InformationBundler|bundleInheritance] Parent found with bundles', parentBundles);
+						}
+						parentBundles.forEach(b => {
+							if (registeredBundlesAvailable.indexOf(b) === -1) {
+								registeredBundlesAvailable.push(b);
+							}
+						});
+						if (_debugMode) {
+							_ib.LOG('[TLSC|InformationBundler|bundleInheritance] Post Inheritance. All bundles used:', registeredBundlesAvailable);
+						}
+					} else {
+						if (_debugMode) {
+							_ib.LOG('[TLSC|InformationBundler|bundleInheritance] No InformationBundler-enabled parent available.');
+						}
+					}
+
+					instance[INFORMATION_BUNDLER_NAMESPACE].helpersAvailable = _ib.helpersUsed(registeredBundlesAvailable);
+					if (_debugMode) {
+						_ib.LOG(`[TLSC|InformationBundler] Helpers available to instance of ${tmpl.viewName}: [${Object.keys(instance[INFORMATION_BUNDLER_NAMESPACE].helpersAvailable)}]`);
+					}
+				});
+
 				// prepare templates with all relevant subs
 				_ib.subscriptionsUsed(bundleNames).forEach(function({
 					name, subscriptionArgs, options
@@ -251,6 +315,13 @@ InformationBundler = (function() {
 					_ib.LOG(`[TLSC|InformationBundler|prepareTemplates] Adding ${countKeys(allHelpers)} helpers to ${tmpl.viewName}`);
 				}
 				tmpl.helpers(allHelpers);
+			});
+		});
+
+		PackageUtilities.addImmutablePropertyFunction(_ib, 'touch', function touch(tmpl) {
+			_ib.prepareTemplates({
+				templates: tmpl,
+				bundleNames: []
 			});
 		});
 	}
