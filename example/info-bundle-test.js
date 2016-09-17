@@ -1,6 +1,6 @@
-/* global Fake: true */
-/* global InformationBundler: true */
-
+import { Meteor } from 'meteor/meteor';
+import { Fake } from 'meteor/anti:fake';
+import { InformationBundler } from 'meteor/convexset:template-level-subs-cache';
 
 var CustomerCollection = new Mongo.Collection("customers");
 var PurchaseRecordCollection = new Mongo.Collection("purchases");
@@ -60,6 +60,7 @@ InformationBundler.addSupplementaryInformationBundle({
 });
 
 if (Meteor.isClient) {
+	import { Template } from 'meteor/templating';
 
 	InformationBundler.associateSubscription({
 		bundleName: "customers",
@@ -131,5 +132,4 @@ if (Meteor.isClient) {
 
 	InformationBundler.touch([Template.__dynamic, Template.__dynamicWithDataContext]);
 	InformationBundler.touch(Template.InfoBundleTest_CustomersPurchases_Child);
-
 }

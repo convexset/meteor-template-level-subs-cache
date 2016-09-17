@@ -1,17 +1,21 @@
-/* global TemplateLevelSubsCache: true */
-/* global createCachedSubscriptionInstance: true */
-/* global DefaultSubscriptions: true */
-/* global SubsCache: true */
+import { Meteor } from 'meteor/meteor';
+import { Template } from 'meteor/templating';
+import { Tracker } from 'meteor/tracker';
+
+import SubsCache from 'meteor/jimmiebtlr:subs-cache';  // default export
+
+import { createCachedSubscriptionInstance } from './create-cached-subscription-instance';
+import { DefaultSubscriptions } from './default-subscriptions';
 
 import { checkNpmVersions } from 'meteor/tmeasday:check-npm-versions';
 checkNpmVersions({
-  'package-utils': '^0.2.1',
-  'underscore' : '^1.8.3',
+	'package-utils': '^0.2.1',
+	'underscore': '^1.8.3',
 });
 const PackageUtilities = require('package-utils');
 const _ = require('underscore');
 
-TemplateLevelSubsCache = (function() {
+const TemplateLevelSubsCache = (function() {
 	var _tlsc = function TemplateLevelSubsCache() {};
 	var tlsc = new _tlsc();
 
@@ -75,7 +79,7 @@ TemplateLevelSubsCache = (function() {
 				template.onCreated(function tlsc_onCreated() {
 					var instance = this;
 					if (typeof instance.cachedSubscription === "undefined") {
-						instance.cachedSubscription = createCachedSubscriptionInstance(instance, tlscInstance, subsCache);
+						instance.cachedSubscription = createCachedSubscriptionInstance(instance, tlscInstance, subsCache, tlsc);
 
 						if (options.replaceSubscriptionsReady) {
 							instance.subscriptionsReady = instance.cachedSubscription.allSubsReady;
@@ -227,3 +231,5 @@ TemplateLevelSubsCache = (function() {
 
 	return tlsc;
 })();
+
+export { TemplateLevelSubsCache };

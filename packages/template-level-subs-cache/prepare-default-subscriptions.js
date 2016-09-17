@@ -1,14 +1,9 @@
-/* global DefaultSubscriptions: true */
+import { Meteor } from 'meteor/meteor';
 
-import { checkNpmVersions } from 'meteor/tmeasday:check-npm-versions';
-checkNpmVersions({
-  'package-utils': '^0.2.1',
-  'underscore' : '^1.8.3',
-});
 const PackageUtilities = require('package-utils');
 const _ = require('underscore');
 
-DefaultSubscriptions = (function() {
+function prepareDefaultSubscriptions({Template, ReactiveDict} = {}) {
 	var _dp = function DefaultSubscriptions() {};
 	var dp = new _dp();
 
@@ -59,9 +54,11 @@ DefaultSubscriptions = (function() {
 			return readyList.reduce((acc, x) => acc && x, true);
 		});
 
-		Template.registerHelper('defaultSubscriptionIsReady', pubId => DefaultSubscriptions.isReady(pubId));
-		Template.registerHelper('defaultSubscriptionsAllReady', () => DefaultSubscriptions.allReady());
+		Template.registerHelper('defaultSubscriptionIsReady', pubId => dp.isReady(pubId));
+		Template.registerHelper('defaultSubscriptionsAllReady', () => dp.allReady());
 	}
 
 	return dp;
-})();
+}
+
+export { prepareDefaultSubscriptions };

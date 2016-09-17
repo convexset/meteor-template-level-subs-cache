@@ -1,4 +1,5 @@
 /* global _EnsureIndexes: true */
+import { Mongo } from 'meteor/mongo';
 
 // This is provides server only functionality
 
@@ -11,8 +12,8 @@ const PackageUtilities = require('package-utils');
 const _ = require('underscore');
 
 var Future = Npm.require('fibers/future');
-Mongo.Collection.prototype.getIndexes = function() {
-	var raw = this.rawCollection();
+function getIndexes(collection) {
+	var raw = collection.rawCollection();
 	var future = new Future();
 
 	raw.indexes(function(err, indexes) {
@@ -24,7 +25,13 @@ Mongo.Collection.prototype.getIndexes = function() {
 	});
 
 	return future.wait();
-};
+}
+
+if (!Mongo.Collection.prototype._getIndexes) {
+	Mongo.Collection.prototype._getIndexes = function _getIndexes() {
+		return getIndexes(this);
+	}
+}
 
 _EnsureIndexes = (function() {
 	var _ei = function EnsureIndexes() {};
@@ -82,7 +89,7 @@ _EnsureIndexes = (function() {
 			var _allCurrentIndexes;
 			try {
 				// this can fail when there is no such collection
-				_allCurrentIndexes = Mongo.Collection.get(collectionName).getIndexes();
+				_allCurrentIndexes = getIndexes(Mongo.Collection.get(collectionName));
 			} catch (e) {
 				console.error(`Error getting indexes in collection: ${collectionName}:`, e);
 				return;
@@ -141,3 +148,5 @@ _EnsureIndexes = (function() {
 
 	return ei;
 })();
+
+export { _EnsureIndexes };

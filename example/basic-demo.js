@@ -1,12 +1,18 @@
-/* global Fake: true */
 /* global Boo: true */
 /* global Hoo: true */
 /* global BooMirror: true */
 /* global HooMirror: true */
 /* global idx1: true */
-/* global TemplateLevelSubsCache: true */
-/* global Template: true */
 /* global hello2: true */
+
+import { Meteor } from 'meteor/meteor';
+import { Template } from 'meteor/templating';
+import { Mongo } from 'meteor/mongo';
+import { Tracker } from 'meteor/tracker';
+import { ReactiveVar } from 'meteor/reactive-var';
+import { Fake } from 'meteor/anti:fake';
+
+import { TemplateLevelSubsCache, _EnsureIndexes } from 'meteor/convexset:template-level-subs-cache';
 
 Boo = new Mongo.Collection("boo");
 Hoo = new Mongo.Collection("hoo");

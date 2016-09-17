@@ -1,15 +1,5 @@
-/* global Meteor: true */
-/* global Template: true */
-/* global Spacebars: true */
+import { Meteor } from 'meteor/meteor';
 
-/* global InformationBundler: true */
-/* global TemplateLevelSubsCache: true */
-
-import { checkNpmVersions } from 'meteor/tmeasday:check-npm-versions';
-checkNpmVersions({
-	'package-utils': '^0.2.1',
-	'underscore': '^1.8.3',
-});
 const PackageUtilities = require('package-utils');
 const _ = require('underscore');
 
@@ -19,30 +9,31 @@ function countKeys(o) {
 
 const INFORMATION_BUNDLER_NAMESPACE = "[[[convexset:template-level-subs-cache/information-bundler]]]";
 
-if (Meteor.isClient) {
-	Template.registerHelper('_ib_', function(helperName, ...args) {
-		const instance = Template.instance();
-		if (instance[INFORMATION_BUNDLER_NAMESPACE]) {
-			while (args[args.length - 1] instanceof Spacebars.kw) {
-				args.pop();
-			}
-			const helper = instance[INFORMATION_BUNDLER_NAMESPACE].helpersAvailable[helperName];
-			if (typeof helper !== 'undefined') {
-				if (_.isFunction(helper)) {
-					return helper.apply(this, args);
+function prepareInformationBundler({Template, Spacebars, TemplateLevelSubsCache} = {}) {
+	if (Meteor.isClient) {
+		Template.registerHelper('_ib_', function(helperName, ...args) {
+			const instance = Template.instance();
+			if (instance[INFORMATION_BUNDLER_NAMESPACE]) {
+				while (args[args.length - 1] instanceof Spacebars.kw) {
+					args.pop();
+				}
+				const helper = instance[INFORMATION_BUNDLER_NAMESPACE].helpersAvailable[helperName];
+				if (typeof helper !== 'undefined') {
+					if (_.isFunction(helper)) {
+						return helper.apply(this, args);
+					} else {
+						return helper;
+					}
 				} else {
-					return helper;
+					throw new Meteor.Error('information-bundler-error--helper-not-available', helperName);
 				}
 			} else {
-				throw new Meteor.Error('information-bundler-error--helper-not-available', helperName);
+				throw new Meteor.Error('information-bundler-not-applied', instance.view.name);
 			}
-		} else {
-			throw new Meteor.Error('information-bundler-not-applied', instance.view.name);
-		}
-	});
-}
+		});
+	}
 
-InformationBundler = (function() {
+
 	var __ib = function InformationBundler() {};
 	var _ib = new __ib();
 
@@ -332,4 +323,6 @@ InformationBundler = (function() {
 	/////////////////////////////////////////////////////////////////////////////
 
 	return _ib;
-})();
+}
+
+export { prepareInformationBundler };
