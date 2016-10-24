@@ -76,6 +76,9 @@ const TemplateLevelSubsCache = (function() {
 			}, options);
 
 			templates.forEach(function(template) {
+
+				var isExcludedBecauseExisting = false;
+
 				template.onCreated(function tlsc_onCreated() {
 					var instance = this;
 					if (typeof instance.cachedSubscription === "undefined") {
@@ -86,6 +89,19 @@ const TemplateLevelSubsCache = (function() {
 						}
 					}
 
+					// update subs list
+					var subsNameList = Tracker.nonreactive(function() {
+						return instance.cachedSubscription.__cachedSubscriptionList.get().map(x => x);
+					});
+					if (subsNameList.indexOf(subId) > -1) {
+						console.warn("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + " already has a sub with id " + subId + ". Excluding.");
+						isExcludedBecauseExisting = true;
+						return;
+					}
+					subsNameList.push(subId);
+					instance.cachedSubscription.__cachedSubscriptionList.set(subsNameList);
+					instance.cachedSubscription.__cachedSubscriptionArgs[subId] = subscriptionArgs;
+
 					// dealing with the strange case where the template gets destroyed
 					// before the sub starts
 					instance.cachedSubscription.__allowStartSubCall[subId] = true;
@@ -93,21 +109,15 @@ const TemplateLevelSubsCache = (function() {
 
 					// store options by subId
 					instance.cachedSubscription.__options[subId] = options;
-
-					var subsNameList = Tracker.nonreactive(function() {
-						return instance.cachedSubscription.__cachedSubscriptionList.get().map(x => x);
-					});
-					if (subsNameList.indexOf(subId) > -1) {
-						throw new Meteor.Error("id-already-exists", subId);
-					}
-					subsNameList.push(subId);
-					instance.cachedSubscription.__cachedSubscriptionList.set(subsNameList);
-					instance.cachedSubscription.__cachedSubscriptionArgs[subId] = subscriptionArgs;
 				});
 
 
 				if (options.startOnCreated) {
 					template.onCreated(function TemplateLevelSubsCache_onCreated() {
+						if (isExcludedBecauseExisting) {
+							return;
+						}
+
 						var instance = this;
 						if (_debugMode) {
 							tlsc.LOG("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onCreated for " + subId);
@@ -121,6 +131,10 @@ const TemplateLevelSubsCache = (function() {
 					});
 				} else {
 					template.onRendered(function TemplateLevelSubsCache_onRendered() {
+						if (isExcludedBecauseExisting) {
+							return;
+						}
+
 						var instance = this;
 						if (_debugMode) {
 							tlsc.LOG("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onRendered for " + subId);
@@ -135,6 +149,10 @@ const TemplateLevelSubsCache = (function() {
 				}
 
 				template.onDestroyed(function TemplateLevelSubsCache_onDestroyed() {
+					if (isExcludedBecauseExisting) {
+						return;
+					}
+
 					var instance = this;
 					instance.cachedSubscription.__allowStartSubCall[subId] = false;
 					if (_debugMode) {
