@@ -47,7 +47,7 @@ function prepareDefaultSubscriptions({Template, ReactiveDict} = {}) {
 			return PackageUtilities.shallowCopy(_subs);
 		};
 		// PackageUtilities.addImmutablePropertyFunction(dp, 'listSubscriptions', listSubscriptions);
-		PackageUtilities.addImmutablePropertyFunction(dp, 'listSubscriptionNames', Object.keys(listSubscriptions()));
+		PackageUtilities.addPropertyGetter(dp, 'subscriptionNames', () => Object.keys(listSubscriptions()));
 
 		PackageUtilities.addImmutablePropertyFunction(dp, 'allReady', function allReady() {
 			var readyList = _.map(listSubscriptions(), sub => sub.ready());
