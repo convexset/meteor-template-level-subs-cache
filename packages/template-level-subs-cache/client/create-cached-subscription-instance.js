@@ -3,9 +3,25 @@ import { Tracker } from 'meteor/tracker';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { ReactiveDict } from 'meteor/reactive-dict';
 
+const _ = require('underscore');
+
 import { DefaultSubscriptions } from './default-subscriptions';
 
 var globalTemplateIndices = {};
+
+function getAllTemplateAncestors(templateInstance) {
+	const templates = [];
+	let currentView = templateInstance.view;
+	while (!!currentView.parentView) {
+		currentView = currentView.parentView;
+		if ((currentView.name.substring(0, 9) === 'Template.') || (currentView.name === 'body')) {
+			if (!!currentView._templateInstance && _.isFunction(currentView._templateInstance.subscriptionsReady)) {
+				templates.push(currentView._templateInstance);
+			}
+		}
+	}
+	return templates;
+}
 
 function createCachedSubscriptionInstance(templateInstance, tlscInstance, subsCache, _TemplateLevelSubsCache) {
 	var templateName = templateInstance.view.name;
@@ -15,6 +31,8 @@ function createCachedSubscriptionInstance(templateInstance, tlscInstance, subsCa
 	globalTemplateIndices[templateName] += 1;
 
 	const __original_subscriptionsReady = templateInstance.subscriptionsReady;
+
+	const allTemplateAncestors = getAllTemplateAncestors(templateInstance);
 
 	return {
 		__templateInstanceId: globalTemplateIndices[templateName],
@@ -278,7 +296,19 @@ function createCachedSubscriptionInstance(templateInstance, tlscInstance, subsCa
 			// avoid short circuit evaluation to achieve proper reactivity
 			var isReady = allCachedSubsReady && templateLevelSubsReady && defaultSubsReady;
 			if (_TemplateLevelSubsCache.DEBUG_MODE) {
-				_TemplateLevelSubsCache.LOG("[Cached Subscription]{" + (new Date()) + "} allSubsReady() --> " + isReady, `(${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
+				_TemplateLevelSubsCache.LOG(`[Cached Subscription]{${new Date()}} allSubsReady() --> ${isReady} [allCachedSubsReady=${allCachedSubsReady}, templateLevelSubsReady=${templateLevelSubsReady}, defaultSubsReady=${defaultSubsReady}] (${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
+			}
+			return isReady;
+		},
+		allSubsReadyAllAncestors: function allSubsReadyAllAncestors() {
+			var allCachedSubsReady = templateInstance.cachedSubscription.allCachedSubsReady();
+			var templateLevelSubsReady = __original_subscriptionsReady.call(templateInstance);
+			var defaultSubsReady = DefaultSubscriptions.allReady();
+			var ancestorSubsReady = allTemplateAncestors.reduce((acc, instance) => acc && instance.subscriptionsReady(), true);
+			// avoid short circuit evaluation to achieve proper reactivity
+			var isReady = allCachedSubsReady && templateLevelSubsReady && defaultSubsReady && ancestorSubsReady;
+			if (_TemplateLevelSubsCache.DEBUG_MODE) {
+				_TemplateLevelSubsCache.LOG(`[Cached Subscription]{${new Date()}} allSubsReadyAllAncestors() --> ${isReady} [allCachedSubsReady=${allCachedSubsReady}, templateLevelSubsReady=${templateLevelSubsReady}, defaultSubsReady=${defaultSubsReady}, ancestorSubsReady=${ancestorSubsReady}] (${templateInstance.view.name}|${templateInstance.cachedSubscription.__templateInstanceId})`);
 			}
 			return isReady;
 		},

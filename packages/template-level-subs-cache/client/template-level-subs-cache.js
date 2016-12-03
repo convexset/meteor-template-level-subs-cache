@@ -72,6 +72,7 @@ const TemplateLevelSubsCache = (function() {
 				beforeStop: null,
 				afterStop: null,
 				replaceSubscriptionsReady: true,
+				replaceSubscriptionsReady_checkOnAllAncestors: true,
 				argValidityPredicate: () => true,
 			}, options);
 
@@ -85,7 +86,11 @@ const TemplateLevelSubsCache = (function() {
 						instance.cachedSubscription = createCachedSubscriptionInstance(instance, tlscInstance, subsCache, tlsc);
 
 						if (options.replaceSubscriptionsReady) {
-							instance.subscriptionsReady = instance.cachedSubscription.allSubsReady;
+							if (options.replaceSubscriptionsReady_checkOnAllAncestors) {
+								instance.subscriptionsReady = instance.cachedSubscription.allSubsReadyAllAncestors;
+							} else {
+								instance.subscriptionsReady = instance.cachedSubscription.allSubsReady;
+							}
 						}
 					}
 

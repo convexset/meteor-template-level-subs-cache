@@ -9,7 +9,6 @@ import { Spacebars } from 'meteor/spacebars';
 import { ReactiveDict } from 'meteor/reactive-dict';
 
 import { TemplateLevelSubsCache } from './client/template-level-subs-cache.js';
-import './client/block-helpers.html';
 
 import { DefaultSubscriptions } from './client/default-subscriptions.js';
 

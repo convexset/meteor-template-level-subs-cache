@@ -13,9 +13,7 @@ Additional tools are provided in the form of:
 
 ## Table of Contents
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
+<!-- MarkdownTOC -->
 
 - [Install](#install)
 - [Usage](#usage)
@@ -26,7 +24,7 @@ Additional tools are provided in the form of:
     - [Additional Options](#additional-options)
   - [The Information Bundler Enhancement](#the-information-bundler-enhancement)
     - [Why](#why)
-    - [Using It](#using-it)
+    - [Usage by Example](#usage-by-example)
     - [Setting the Default Cache](#setting-the-default-cache)
     - [Sharing Helpers with Children](#sharing-helpers-with-children)
   - [Template Helpers](#template-helpers)
@@ -34,11 +32,12 @@ Additional tools are provided in the form of:
 - [Debug Mode](#debug-mode)
 - [Other Tools](#other-tools)
   - [`DefaultSubscriptions`](#defaultsubscriptions)
-  - [`_EnsureIndexes` (Server Only, Naturally)](#_ensureindexes-server-only-naturally)
-  - [Decorators (in JavaScript and Blaze)](#decorators-in-javascript-and-blaze)
+  - [`_EnsureIndexes` \(Server Only, Naturally\)](#ensureindexes-server-only-naturally)
+  - [Decorators \(in JavaScript\)](#decorators-in-javascript)
 - [Notes](#notes)
 
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<!-- /MarkdownTOC -->
+
 
 ## Install
 
@@ -190,6 +189,7 @@ For those with a touch of OCD, each subscription may be "prepared" in with more 
  - `beforeStop`: a callback function that is called before the subscription is stopped
  - `afterStop`: a callback function that is called after the subscription is stopped
  - `replaceSubscriptionsReady`: whether to replace/shadow the [`subscriptionsReady`](https://docs.meteor.com/api/templates.html#Blaze-TemplateInstance-subscribe) function of `Blaze.TemplateInstance` with one that covers default publications, template-level subscriptions and template-level cached subscriptions (default: `true`)
+ - `replaceSubscriptionsReady_checkOnAllAncestors`: if `replaceSubscriptionsReady` is `true`, uses a version that also requires all ancestor templates to have `templateInstance.subscriptionsReady()` report `true` (default: `true`)
  - `argValidityPredicate`: when arguments are updated (to `newArgs`) the subscription will be re-started with the new arguments only if `argValidityPredicate(newArgs)` is `true` (default: `() => true`)
 
 Each of the above callbacks is called with the template instance and subscription id as arguments.
@@ -494,7 +494,7 @@ Meteor.startup(function() {
 });
 ```
 
-### Decorators (in JavaScript and Blaze)
+### Decorators (in JavaScript)
 
 Here is a simple way to execute some code once all subscriptions are ready:
 ```javascript
@@ -509,44 +509,6 @@ Template.MyTemplate.onCreated(
         function() {/* (optional) code to run after each check */}
     )
 );
-```
-
-It is generally advisable that templates be wrapped with an additional "loading" block helper to display nothing prior to the arrival of all relevant data. The following block helper does exactly what one expects it to do:
-```html
-{{#IfAllSubsReady}}
-  Content Here
-{{else}}
-  Loading...
-{{/IfAllSubsReady}}
-```
-
-If one reuses the same "still loading" content everywhere, one might consider creating one's own block helper like that below:
-```html
-<template name="WhenAllSubsReady">
-  {{#IfAllSubsReady}}
-    {{> Template.contentBlock}}
-  {{else}}
-    Loading...
-  {{/IfAllSubsReady}}
-</template>
-```
-And use it as follows:
-```html
-{{#WhenAllSubsReady}}
-  Content Here
-{{/WhenAllSubsReady}}
-```
-Or better yet, ...
-```html
-<template name="WhenAllSubsReady">
-  {{#if allSubsReady}}
-    {{> Template.contentBlock}}
-  {{else}}
-    {{#if notReadyTemplate}}
-      {{> Template.dynamic template=notReadyTemplate}}
-    {{/if}}
-  {{/if}}
-</template>
 ```
 
 ## Notes
