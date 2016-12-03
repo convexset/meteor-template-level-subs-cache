@@ -1,4 +1,4 @@
-import { Meteor } from 'meteor/meteor';
+// import { Meteor } from 'meteor/meteor';
 import { Template } from 'meteor/templating';
 import { Tracker } from 'meteor/tracker';
 
@@ -15,13 +15,16 @@ checkNpmVersions({
 const PackageUtilities = require('package-utils');
 const _ = require('underscore');
 
+/* eslint-disable no-console */
+
 const TemplateLevelSubsCache = (function() {
-	var _tlsc = function TemplateLevelSubsCache() {};
-	var tlsc = new _tlsc();
+	// eslint-disable-next-line no-shadow
+	const _tlsc = function TemplateLevelSubsCache() {};
+	const tlsc = new _tlsc();
 
 	// Debug Mode
-	var _debugMode = false;
-	PackageUtilities.addPropertyGetterAndSetter(tlsc, "DEBUG_MODE", {
+	let _debugMode = false;
+	PackageUtilities.addPropertyGetterAndSetter(tlsc, 'DEBUG_MODE', {
 		get: () => _debugMode,
 		set: (value) => {
 			_debugMode = !!value;
@@ -29,10 +32,10 @@ const TemplateLevelSubsCache = (function() {
 	});
 
 	// Logger
-	var _logger = function defaultInfoLogger() {
-		console.info.apply(console, _.toArray(arguments));
+	let _logger = function defaultInfoLogger() {
+		console.info(...arguments);
 	};
-	PackageUtilities.addPropertyGetterAndSetter(tlsc, "LOG", {
+	PackageUtilities.addPropertyGetterAndSetter(tlsc, 'LOG', {
 		get: () => _logger,
 		set: (fn) => {
 			if (_.isFunction(fn)) {
@@ -41,29 +44,30 @@ const TemplateLevelSubsCache = (function() {
 		},
 	});
 
-	PackageUtilities.addImmutablePropertyFunction(tlsc, "makeCache", function makeCache(options = {}) {
+	PackageUtilities.addImmutablePropertyFunction(tlsc, 'makeCache', function makeCache(options = {}) {
 		// See: https://atmospherejs.com/ccorcos/subs-cache
 		options = _.extend({
 			expireAfter: 5, // in minutes
 			cacheLimit: -1 // number of subscriptions to cache; -1 for infinite
 		}, options);
 
-		var subsCache = new SubsCache(options);
+		const subsCache = new SubsCache(options);
 
-		var _tlscI = function TemplateLevelSubsCache_Instance() {};
-		var tlscInstance = new _tlscI();
+		// eslint-disable-next-line camelcase
+		const _tlscI = function TemplateLevelSubsCache_Instance() {};
+		const tlscInstance = new _tlscI();
 
-		PackageUtilities.addImmutablePropertyObject(tlscInstance, "options", options);
+		PackageUtilities.addImmutablePropertyObject(tlscInstance, 'options', options);
 
-		PackageUtilities.addImmutablePropertyFunction(tlscInstance, "prepareCachedSubscription", function cachedSubscription(tmpls, subId, subscriptionArgs, options = {}) {
-			var templates;
+		PackageUtilities.addImmutablePropertyFunction(tlscInstance, 'prepareCachedSubscription', function cachedSubscription(tmpls, subId, subscriptionArgs, pcsOptions = {}) {
+			let templates;
 			if (_.isArray(tmpls)) {
 				templates = tmpls;
 			} else {
 				templates = [tmpls];
 			}
 
-			options = _.extend({
+			pcsOptions = _.extend({
 				startOnCreated: true,
 				expireAfter: null,
 				beforeStart: null,
@@ -74,19 +78,18 @@ const TemplateLevelSubsCache = (function() {
 				replaceSubscriptionsReady: true,
 				replaceSubscriptionsReady_checkOnAllAncestors: true,
 				argValidityPredicate: () => true,
-			}, options);
+			}, pcsOptions);
 
-			templates.forEach(function(template) {
+			templates.forEach(template => {
+				let isExcludedBecauseExisting = false;
 
-				var isExcludedBecauseExisting = false;
-
-				template.onCreated(function tlsc_onCreated() {
-					var instance = this;
-					if (typeof instance.cachedSubscription === "undefined") {
+				template.onCreated(function TemplateLevelSubsCacheOnCreated() {
+					const instance = this;
+					if (typeof instance.cachedSubscription === 'undefined') {
 						instance.cachedSubscription = createCachedSubscriptionInstance(instance, tlscInstance, subsCache, tlsc);
 
-						if (options.replaceSubscriptionsReady) {
-							if (options.replaceSubscriptionsReady_checkOnAllAncestors) {
+						if (pcsOptions.replaceSubscriptionsReady) {
+							if (pcsOptions.replaceSubscriptionsReady_checkOnAllAncestors) {
 								instance.subscriptionsReady = instance.cachedSubscription.allSubsReadyAllAncestors;
 							} else {
 								instance.subscriptionsReady = instance.cachedSubscription.allSubsReady;
@@ -95,11 +98,11 @@ const TemplateLevelSubsCache = (function() {
 					}
 
 					// update subs list
-					var subsNameList = Tracker.nonreactive(function() {
+					const subsNameList = Tracker.nonreactive(() => {
 						return instance.cachedSubscription.__cachedSubscriptionList.get().map(x => x);
 					});
 					if (subsNameList.indexOf(subId) > -1) {
-						console.warn("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + " already has a sub with id " + subId + ". Excluding.");
+						console.warn(`[Cached Subscription]{${new Date()}} ${instance.view.name} already has a sub with id ${subId}. Excluding.`);
 						isExcludedBecauseExisting = true;
 						return;
 					}
@@ -112,61 +115,61 @@ const TemplateLevelSubsCache = (function() {
 					instance.cachedSubscription.__allowStartSubCall[subId] = true;
 					instance.cachedSubscription.__startSubCalled[subId] = false;
 
-					// store options by subId
-					instance.cachedSubscription.__options[subId] = options;
+					// store pcsOptions by subId
+					instance.cachedSubscription.__options[subId] = pcsOptions;
 				});
 
 
-				if (options.startOnCreated) {
-					template.onCreated(function TemplateLevelSubsCache_onCreated() {
+				if (pcsOptions.startOnCreated) {
+					template.onCreated(function TemplateLevelSubsCacheStartOnCreated() {
 						if (isExcludedBecauseExisting) {
 							return;
 						}
 
-						var instance = this;
+						const instance = this;
 						if (_debugMode) {
-							tlsc.LOG("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onCreated for " + subId);
+							tlsc.LOG(`[Cached Subscription]{${new Date()}} ${instance.view.name}.onCreated for ${subId}`);
 						}
 						if (instance.cachedSubscription.__allowStartSubCall[subId]) {
 							instance.cachedSubscription.startSub(subId);
 							instance.cachedSubscription.__startSubCalled[subId] = true;
 						} else {
-							tlsc.LOG("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onCreated for " + subId + '[PREVENTED!]');
+							tlsc.LOG(`[Cached Subscription]{${new Date()}} ${instance.view.name}.onCreated for ${subId}[PREVENTED!]`);
 						}
 					});
 				} else {
-					template.onRendered(function TemplateLevelSubsCache_onRendered() {
+					template.onRendered(function TemplateLevelSubsCacheStartOnRendered() {
 						if (isExcludedBecauseExisting) {
 							return;
 						}
 
-						var instance = this;
+						const instance = this;
 						if (_debugMode) {
-							tlsc.LOG("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onRendered for " + subId);
+							tlsc.LOG(`[Cached Subscription]{${new Date()}} ${instance.view.name}.onRendered for ${subId}`);
 						}
 						if (instance.cachedSubscription.__allowStartSubCall[subId]) {
 							instance.cachedSubscription.startSub(subId);
 							instance.cachedSubscription.__startSubCalled[subId] = true;
 						} else {
-							tlsc.LOG("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onRendered for " + subId + '[PREVENTED!]');
+							tlsc.LOG(`[Cached Subscription]{${new Date()}} ${instance.view.name}.onRendered for ${subId}[PREVENTED!]`);
 						}
 					});
 				}
 
-				template.onDestroyed(function TemplateLevelSubsCache_onDestroyed() {
+				template.onDestroyed(function TemplateLevelSubsCacheOnDestroyed() {
 					if (isExcludedBecauseExisting) {
 						return;
 					}
 
-					var instance = this;
+					const instance = this;
 					instance.cachedSubscription.__allowStartSubCall[subId] = false;
 					if (_debugMode) {
-						tlsc.LOG("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onDestroyed for " + subId);
+						tlsc.LOG(`[Cached Subscription]{${new Date()}} ${instance.view.name}.onDestroyed for ${subId}`);
 					}
 					if (instance.cachedSubscription.__startSubCalled[subId]) {
 						instance.cachedSubscription.stopSub(subId);
 					} else {
-						tlsc.LOG("[Cached Subscription]{" + (new Date()) + "} " + instance.view.name + ".onDestroyed for " + subId + " (Sub was never started.)");
+						tlsc.LOG(`[Cached Subscription]{${new Date()}} ${instance.view.name}.onDestroyed for ${subId} (Sub was never started.)`);
 					}
 				});
 
@@ -175,25 +178,24 @@ const TemplateLevelSubsCache = (function() {
 					allCachedSubsReady: () => Template.instance().cachedSubscription.cachedSubsReady(),
 				});
 			});
-
 		});
 
 		return tlscInstance;
 	});
 
-	var _defaultCache = tlsc.makeCache();
-	PackageUtilities.addPropertyGetter(tlsc, "DEFAULT_CACHE", () => _defaultCache);
-	PackageUtilities.addImmutablePropertyFunction(tlsc, "replaceDefaultCache", function replaceDefaultCache(options) {
-		_defaultCache = tlsc.makeCache(options);
+	let _defaultCache = tlsc.makeCache();
+	PackageUtilities.addPropertyGetter(tlsc, 'DEFAULT_CACHE', () => _defaultCache);
+	PackageUtilities.addImmutablePropertyFunction(tlsc, 'replaceDefaultCache', function replaceDefaultCache(rdcOptions) {
+		_defaultCache = tlsc.makeCache(rdcOptions);
 	});
 
 	function areAllSubsReadyCheck(instance) {
-		var isReady;
+		let isReady;
 		if (!!instance.cachedSubscription) {
 			isReady = instance.cachedSubscription.allSubsReady();
 		} else {
-			var templateLevelSubsReady = instance.subscriptionsReady();
-			var defaultSubsReady = DefaultSubscriptions.allReady();
+			const templateLevelSubsReady = instance.subscriptionsReady();
+			const defaultSubsReady = DefaultSubscriptions.allReady();
 			isReady = templateLevelSubsReady && defaultSubsReady;
 		}
 		return isReady;
@@ -203,7 +205,7 @@ const TemplateLevelSubsCache = (function() {
 		return areAllSubsReadyCheck(Template.instance());
 	});
 
-	var Decorators = {};
+	const Decorators = {};
 	PackageUtilities.addMutablePropertyObject(tlsc, 'Decorators', Decorators);
 	PackageUtilities.addImmutablePropertyFunction(Decorators, 'whenAllSubsReady', function whenAllSubsReady(
 		body = function() {},
@@ -211,11 +213,11 @@ const TemplateLevelSubsCache = (function() {
 		after = function() {}
 	) {
 		return function() {
-			var instance = this;
-			instance.autorun(function(c) {
+			const instance = this;
+			instance.autorun(c => {
 				before.call(instance, c);
 
-				var isReady = areAllSubsReadyCheck(instance);
+				const isReady = areAllSubsReadyCheck(instance);
 
 				if (isReady) {
 					body.call(instance, c);
@@ -229,26 +231,26 @@ const TemplateLevelSubsCache = (function() {
 	/////////////////////////////////////////////////////////////////////////////
 	// ReactiveParamGetter
 	/////////////////////////////////////////////////////////////////////////////
-	var ReactiveParamGetter = {};
+	const ReactiveParamGetter = {};
 	PackageUtilities.addMutablePropertyObject(tlsc, 'ReactiveParamGetter', ReactiveParamGetter);
 
-	PackageUtilities.addImmutablePropertyFunction(ReactiveParamGetter, 'fromArrayToArray', function makeReactiveParamGetter_fromArrayToArray(arrParamNames, ReactiveParamGetter) {
-		var _params = PackageUtilities.shallowCopy(arrParamNames);
-		return () => _params.map(k => ReactiveParamGetter(k));
+	PackageUtilities.addImmutablePropertyFunction(ReactiveParamGetter, 'fromArrayToArray', function makeReactiveParamGetterFromArrayToArray(arrParamNames, reactiveParamGetter) {
+		const _params = PackageUtilities.shallowCopy(arrParamNames);
+		return () => _params.map(k => reactiveParamGetter(k));
 	});
 
-	PackageUtilities.addImmutablePropertyFunction(ReactiveParamGetter, 'fromArrayToObj', function makeReactiveParamGetter_fromArrayToObj(arrParamNames, ReactiveParamGetter) {
-		var _params = PackageUtilities.shallowCopy(arrParamNames);
-		return () => _.object(_params.map(k => [k, ReactiveParamGetter(k)]));
+	PackageUtilities.addImmutablePropertyFunction(ReactiveParamGetter, 'fromArrayToObj', function makeReactiveParamGetterFromArrayToObj(arrParamNames, reactiveParamGetter) {
+		const _params = PackageUtilities.shallowCopy(arrParamNames);
+		return () => _.object(_params.map(k => [k, reactiveParamGetter(k)]));
 	});
 
-	PackageUtilities.addImmutablePropertyFunction(ReactiveParamGetter, 'fromObjToObj', function makeReactiveParamGetter_fromObjToObj(objParamNames, ReactiveParamGetter) {
-		var _params = PackageUtilities.shallowCopy(objParamNames);
-		return () => _.object(_.map(_params, (p, k) => [k, ReactiveParamGetter(p)]));
+	PackageUtilities.addImmutablePropertyFunction(ReactiveParamGetter, 'fromObjToObj', function makeReactiveParamGetterFromObjToObj(objParamNames, reactiveParamGetter) {
+		const _params = PackageUtilities.shallowCopy(objParamNames);
+		return () => _.object(_.map(_params, (p, k) => [k, reactiveParamGetter(p)]));
 	});
 
-	PackageUtilities.addImmutablePropertyFunction(ReactiveParamGetter, 'fromName', function makeReactiveParamGetter_fromName(paramName, ReactiveParamGetter) {
-		return () => ReactiveParamGetter(paramName);
+	PackageUtilities.addImmutablePropertyFunction(ReactiveParamGetter, 'fromName', function makeReactiveParamGetterFromName(paramName, reactiveParamGetter) {
+		return () => reactiveParamGetter(paramName);
 	});
 	/////////////////////////////////////////////////////////////////////////////
 
