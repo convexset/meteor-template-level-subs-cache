@@ -4,11 +4,11 @@ const PackageUtilities = require('package-utils');
 const _ = require('underscore');
 
 function prepareDefaultSubscriptions({Template, ReactiveDict} = {}) {
-	var _dp = function DefaultSubscriptions() {};
-	var dp = new _dp();
+	const _dp = function DefaultSubscriptions() {};
+	const dp = new _dp();
 
-	var _subs;
-	var _subPresence;
+	let _subs;
+	let _subPresence;
 
 	if (Meteor.isClient) {
 		_subs = {};
@@ -23,26 +23,26 @@ function prepareDefaultSubscriptions({Template, ReactiveDict} = {}) {
 		}
 
 		if (Meteor.isClient) {
-			Meteor.startup(function() {
+			Meteor.startup(() => {
 				_subPresence.set(pubName, 1);
 				_subs[pubName] = Meteor.subscribe(pubName);
 			});
 		}
 	});
 
-	var listSubscriptions;
+	let listSubscriptions;
 
 	if (Meteor.isClient) {
 		PackageUtilities.addImmutablePropertyFunction(dp, 'isReady', function isReady(pubName) {
-			var subPresent = _subPresence.get(pubName);
-			if (typeof subPresent !== "undefined") {
+			const subPresent = _subPresence.get(pubName);
+			if (typeof subPresent !== 'undefined') {
 				return _subs[pubName].ready();
 			} else {
 				throw new Meteor.Error('no-such-default-publication', pubName);
 			}
 		});
 
-		listSubscriptions = function listSubscriptions() {
+		listSubscriptions = function _listSubscriptions() {
 			_subPresence.all();
 			return PackageUtilities.shallowCopy(_subs);
 		};
@@ -50,7 +50,7 @@ function prepareDefaultSubscriptions({Template, ReactiveDict} = {}) {
 		PackageUtilities.addPropertyGetter(dp, 'subscriptionNames', () => Object.keys(listSubscriptions()));
 
 		PackageUtilities.addImmutablePropertyFunction(dp, 'allReady', function allReady() {
-			var readyList = _.map(listSubscriptions(), sub => sub.ready());
+			const readyList = _.map(listSubscriptions(), sub => sub.ready());
 			return readyList.reduce((acc, x) => acc && x, true);
 		});
 
