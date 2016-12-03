@@ -127,15 +127,22 @@ const TemplateLevelSubsCache = (function() {
 						}
 
 						const instance = this;
-						if (_debugMode) {
-							tlsc.LOG(`[Cached Subscription]{${new Date()}} ${instance.view.name}.onCreated for ${subId}`);
-						}
-						if (instance.cachedSubscription.__allowStartSubCall[subId]) {
-							instance.cachedSubscription.startSub(subId);
-							instance.cachedSubscription.__startSubCalled[subId] = true;
-						} else {
-							tlsc.LOG(`[Cached Subscription]{${new Date()}} ${instance.view.name}.onCreated for ${subId}[PREVENTED!]`);
-						}
+						(function checkAndStartSubOnCreated() {
+							if (!instance.___tlsc_on_destroy_called__) {
+								if (!instance.cachedSubscription) {
+									setTimeout(checkAndStartSubOnCreated, 1);
+								}
+								if (_debugMode) {
+									tlsc.LOG(`[Cached Subscription]{${new Date()}} ${instance.view.name}.onCreated for ${subId}`);
+								}
+								if (instance.cachedSubscription.__allowStartSubCall[subId]) {
+									instance.cachedSubscription.startSub(subId);
+									instance.cachedSubscription.__startSubCalled[subId] = true;
+								} else {
+									tlsc.LOG(`[Cached Subscription]{${new Date()}} ${instance.view.name}.onCreated for ${subId}[PREVENTED!]`);
+								}
+							}
+						})();
 					});
 				} else {
 					template.onRendered(function TemplateLevelSubsCacheStartOnRendered() {
@@ -144,15 +151,22 @@ const TemplateLevelSubsCache = (function() {
 						}
 
 						const instance = this;
-						if (_debugMode) {
-							tlsc.LOG(`[Cached Subscription]{${new Date()}} ${instance.view.name}.onRendered for ${subId}`);
-						}
-						if (instance.cachedSubscription.__allowStartSubCall[subId]) {
-							instance.cachedSubscription.startSub(subId);
-							instance.cachedSubscription.__startSubCalled[subId] = true;
-						} else {
-							tlsc.LOG(`[Cached Subscription]{${new Date()}} ${instance.view.name}.onRendered for ${subId}[PREVENTED!]`);
-						}
+						(function checkAndStartSubOnRendered() {
+							if (!instance.___tlsc_on_destroy_called__) {
+								if (!instance.cachedSubscription) {
+									setTimeout(checkAndStartSubOnRendered, 1);
+								}
+								if (_debugMode) {
+									tlsc.LOG(`[Cached Subscription]{${new Date()}} ${instance.view.name}.onRendered for ${subId}`);
+								}
+								if (instance.cachedSubscription.__allowStartSubCall[subId]) {
+									instance.cachedSubscription.startSub(subId);
+									instance.cachedSubscription.__startSubCalled[subId] = true;
+								} else {
+									tlsc.LOG(`[Cached Subscription]{${new Date()}} ${instance.view.name}.onRendered for ${subId}[PREVENTED!]`);
+								}
+							}
+						})();
 					});
 				}
 
@@ -171,6 +185,8 @@ const TemplateLevelSubsCache = (function() {
 					} else {
 						tlsc.LOG(`[Cached Subscription]{${new Date()}} ${instance.view.name}.onDestroyed for ${subId} (Sub was never started.)`);
 					}
+
+					instance.___tlsc_on_destroy_called__ = true;
 				});
 
 				template.helpers({
