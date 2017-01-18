@@ -190,7 +190,7 @@ For those with a touch of OCD, each subscription may be "prepared" in with more 
  - `afterStop`: a callback function that is called after the subscription is stopped
  - `replaceSubscriptionsReady`: whether to replace/shadow the [`subscriptionsReady`](https://docs.meteor.com/api/templates.html#Blaze-TemplateInstance-subscribe) function of `Blaze.TemplateInstance` with one that covers default publications, template-level subscriptions and template-level cached subscriptions (default: `true`)
  - `replaceSubscriptionsReady_checkOnAllAncestors`: if `replaceSubscriptionsReady` is `true`, uses a version that also requires all ancestor templates to have `templateInstance.subscriptionsReady()` report `true` (default: `true`)
- - `argValidityPredicate`: when arguments are updated (to `newArgs`) the subscription will be re-started with the new arguments only if `argValidityPredicate(newArgs)` is `true` (default: `() => true`)
+ - `argValidityPredicate`: when arguments are updated (to `pubName, newArg1, newArg2, ...`) the subscription will be re-started with the new arguments only if `argValidityPredicate(pubName, newArg1, newArg2, ...)` is `true` (default: `() => true`)
 
 Each of the above callbacks is called with the template instance and subscription id as arguments.
 
